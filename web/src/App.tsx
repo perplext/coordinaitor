@@ -9,6 +9,7 @@ import { Projects } from '@/pages/Projects';
 import { ProjectDetail } from '@/pages/ProjectDetail';
 import { TaskDetail } from '@/pages/TaskDetail';
 import { Analytics } from '@/pages/Analytics';
+import { Knowledge } from '@/pages/Knowledge';
 import { LoginForm } from '@/components/LoginForm';
 import { RegisterForm } from '@/components/RegisterForm';
 import { UserProfile } from '@/components/UserProfile';
@@ -111,6 +112,14 @@ function App() {
                     element={
                       <ProtectedRoute permission="analytics:read">
                         <Analytics />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/knowledge" 
+                    element={
+                      <ProtectedRoute permission="knowledge:read">
+                        <Knowledge />
                       </ProtectedRoute>
                     } 
                   />

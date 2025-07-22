@@ -90,7 +90,8 @@ export const SYSTEM_ROLES = {
       'agents:read',
       'analytics:read',
       'templates:*',
-      'workflows:*'
+      'workflows:*',
+      'knowledge:*'
     ]
   },
   OPERATOR: {
@@ -103,7 +104,8 @@ export const SYSTEM_ROLES = {
       'projects:read',
       'agents:read',
       'analytics:read',
-      'workflows:execute'
+      'workflows:execute',
+      'knowledge:read'
     ]
   },
   VIEWER: {
@@ -114,7 +116,8 @@ export const SYSTEM_ROLES = {
       'tasks:read',
       'projects:read',
       'agents:read',
-      'analytics:read'
+      'analytics:read',
+      'knowledge:read'
     ]
   }
 };
@@ -156,6 +159,13 @@ export const PERMISSIONS = {
   ROLES_READ: { id: 'roles:read', resource: 'roles', action: 'read', description: 'View roles' },
   ROLES_UPDATE: { id: 'roles:update', resource: 'roles', action: 'update', description: 'Update roles' },
   ROLES_DELETE: { id: 'roles:delete', resource: 'roles', action: 'delete', description: 'Delete roles' },
+  
+  // Knowledge permissions
+  KNOWLEDGE_CREATE: { id: 'knowledge:create', resource: 'knowledge', action: 'create', description: 'Create knowledge entries' },
+  KNOWLEDGE_READ: { id: 'knowledge:read', resource: 'knowledge', action: 'read', description: 'View knowledge entries' },
+  KNOWLEDGE_UPDATE: { id: 'knowledge:update', resource: 'knowledge', action: 'update', description: 'Update knowledge entries' },
+  KNOWLEDGE_DELETE: { id: 'knowledge:delete', resource: 'knowledge', action: 'delete', description: 'Delete knowledge entries' },
+  KNOWLEDGE_EXPORT: { id: 'knowledge:export', resource: 'knowledge', action: 'export', description: 'Export knowledge base' },
 };
 
 export class AuthService extends EventEmitter {

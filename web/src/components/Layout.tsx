@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Drawer, AppBar, Toolbar, Typography, IconButton, List, ListItem, ListItemIcon, ListItemText, Chip, Avatar, Menu, MenuItem, Divider } from '@mui/material';
-import { Menu as MenuIcon, Dashboard, Memory, Assignment, FolderOpen, Close, Analytics, Person, Logout, Security, AdminPanelSettings } from '@mui/icons-material';
+import { Menu as MenuIcon, Dashboard, Memory, Assignment, FolderOpen, Close, Analytics, Person, Logout, Security, AdminPanelSettings, School } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
 import { useAuthStore } from '@/store/authStore';
@@ -13,6 +13,7 @@ const menuItems = [
   { text: 'Tasks', icon: <Assignment />, path: '/tasks', permission: 'tasks:read' },
   { text: 'Projects', icon: <FolderOpen />, path: '/projects', permission: 'projects:read' },
   { text: 'Analytics', icon: <Analytics />, path: '/analytics', permission: 'analytics:read' },
+  { text: 'Knowledge', icon: <School />, path: '/knowledge', permission: 'knowledge:read' },
 ];
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {

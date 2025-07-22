@@ -192,3 +192,47 @@ export interface PerformanceInsight {
   message: string;
   metric?: number;
 }
+
+export interface KnowledgeEntry {
+  id: string;
+  title: string;
+  content: string;
+  type: 'solution' | 'pattern' | 'snippet' | 'documentation' | 'error' | 'best-practice';
+  tags: string[];
+  metadata: {
+    taskId?: string;
+    projectId?: string;
+    agentId?: string;
+    language?: string;
+    framework?: string;
+    category?: string;
+    difficulty?: 'easy' | 'medium' | 'hard' | 'expert';
+    votes?: number;
+    views?: number;
+    lastViewed?: Date;
+  };
+  relatedEntries?: string[];
+  source?: {
+    type: 'task' | 'manual' | 'import' | 'external';
+    reference?: string;
+    author?: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string;
+  isPublic: boolean;
+  version: number;
+  userVote?: 1 | -1;
+}
+
+export interface KnowledgeStats {
+  totalEntries: number;
+  entriesByType: Record<KnowledgeEntry['type'], number>;
+  entriesByLanguage: Record<string, number>;
+  entriesByFramework: Record<string, number>;
+  topTags: Array<{ tag: string; count: number }>;
+  topContributors: Array<{ userId: string; count: number }>;
+  recentlyViewed: KnowledgeEntry[];
+  mostViewed: KnowledgeEntry[];
+  highestRated: KnowledgeEntry[];
+}
