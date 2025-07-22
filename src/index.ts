@@ -11,6 +11,7 @@ import { AgentConfig } from './interfaces/agent.interface';
 import { TemplateService } from './services/template-service';
 import { WorkflowService } from './services/workflow-service';
 import { NotificationService } from './services/notification-service';
+import { AnalyticsService } from './services/analytics-service';
 import winston from 'winston';
 import path from 'path';
 
@@ -106,6 +107,16 @@ async function main() {
     notificationService,
     path.join(__dirname, '../workflows')
   );
+  const analyticsService = new AnalyticsService();
+  
+  // Connect analytics to task orchestrator
+  taskOrchestrator.on('task:completed', ({ task }) => {
+    analyticsService.recordTask(task);
+  });
+  
+  taskOrchestrator.on('task:failed', ({ task }) => {
+    analyticsService.recordTask(task);
+  });
 
   app.use(express.json());
   
@@ -125,11 +136,11 @@ async function main() {
     app.use(express.static(path.join(__dirname, '../../web/dist')));
   }
 
-  app.get('/health', (req, res) => {
+  app.get('/api/health', (req, res) => {
     res.json({ status: 'healthy', timestamp: new Date() });
   });
 
-  app.get('/agents', async (req, res) => {
+  app.get('/api/agents', async (req, res) => {
     const agents = agentRegistry.getAllAgents();
     const agentStatuses = agents.map(agent => ({
       id: agent.config.id,
@@ -146,7 +157,7 @@ async function main() {
     res.json({ agents: agentStatuses });
   });
 
-  app.get('/agents/:id/metrics', async (req, res) => {
+  app.get('/api/agents/:id/metrics', async (req, res) => {
     const agent = agentRegistry.getAgent(req.params.id);
     if (!agent) {
       return res.status(404).json({ error: 'Agent not found' });
@@ -170,7 +181,7 @@ async function main() {
     });
   });
 
-  app.post('/tasks', async (req, res) => {
+  app.post('/api/tasks', async (req, res) => {
     try {
       const { prompt, type, priority, context } = req.body;
       const task = await taskOrchestrator.createTask({
@@ -190,7 +201,7 @@ async function main() {
     }
   });
 
-  app.get('/tasks', async (req, res) => {
+  app.get('/api/tasks', async (req, res) => {
     try {
       const { status, projectId, agentId } = req.query;
       let tasks = Array.from(taskOrchestrator['tasks'].values());
@@ -212,7 +223,7 @@ async function main() {
     }
   });
 
-  app.get('/tasks/:id', async (req, res) => {
+  app.get('/api/tasks/:id', async (req, res) => {
     const task = taskOrchestrator.getTask(req.params.id);
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
@@ -220,7 +231,7 @@ async function main() {
     res.json(task);
   });
 
-  app.put('/tasks/:id', async (req, res) => {
+  app.put('/api/tasks/:id', async (req, res) => {
     try {
       const task = taskOrchestrator.getTask(req.params.id);
       if (!task) {
@@ -236,7 +247,7 @@ async function main() {
     }
   });
 
-  app.get('/projects', async (req, res) => {
+  app.get('/api/projects', async (req, res) => {
     try {
       const projects = Array.from(taskOrchestrator['projects'].values());
       res.json({ projects });
@@ -246,7 +257,7 @@ async function main() {
     }
   });
 
-  app.post('/projects', async (req, res) => {
+  app.post('/api/projects', async (req, res) => {
     try {
       const { name, description, prd } = req.body;
       const project = await taskOrchestrator.createProject({
@@ -265,7 +276,7 @@ async function main() {
     }
   });
 
-  app.get('/projects/:id', async (req, res) => {
+  app.get('/api/projects/:id', async (req, res) => {
     const project = taskOrchestrator.getProject(req.params.id);
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
@@ -273,7 +284,7 @@ async function main() {
     res.json(project);
   });
 
-  app.get('/projects/:id/tasks', async (req, res) => {
+  app.get('/api/projects/:id/tasks', async (req, res) => {
     try {
       const tasks = taskOrchestrator.getTasksByProject(req.params.id);
       res.json({ tasks });
@@ -284,7 +295,7 @@ async function main() {
   });
 
   // Git endpoints
-  app.get('/git/status', async (req, res) => {
+  app.get('/api/git/status', async (req, res) => {
     if (!taskOrchestrator['gitService']) {
       return res.status(404).json({ error: 'Git integration not enabled' });
     }
@@ -298,7 +309,7 @@ async function main() {
     }
   });
 
-  app.get('/git/history', async (req, res) => {
+  app.get('/api/git/history', async (req, res) => {
     if (!taskOrchestrator['gitService']) {
       return res.status(404).json({ error: 'Git integration not enabled' });
     }
@@ -313,12 +324,12 @@ async function main() {
   });
 
   // Template endpoints
-  app.get('/templates', (req, res) => {
+  app.get('/api/templates', (req, res) => {
     const templates = templateService.getAllTemplates();
     res.json({ templates });
   });
 
-  app.get('/templates/:id', (req, res) => {
+  app.get('/api/templates/:id', (req, res) => {
     const template = templateService.getTemplate(req.params.id);
     if (!template) {
       return res.status(404).json({ error: 'Template not found' });
@@ -326,7 +337,7 @@ async function main() {
     res.json(template);
   });
 
-  app.post('/templates', (req, res) => {
+  app.post('/api/templates', (req, res) => {
     try {
       const template = templateService.createTemplate(req.body);
       res.json(template);
@@ -336,7 +347,7 @@ async function main() {
     }
   });
 
-  app.put('/templates/:id', (req, res) => {
+  app.put('/api/templates/:id', (req, res) => {
     const template = templateService.updateTemplate(req.params.id, req.body);
     if (!template) {
       return res.status(404).json({ error: 'Template not found' });
@@ -344,7 +355,7 @@ async function main() {
     res.json(template);
   });
 
-  app.delete('/templates/:id', async (req, res) => {
+  app.delete('/api/templates/:id', async (req, res) => {
     try {
       await templateService.deleteTemplate(req.params.id);
       res.json({ success: true });
@@ -354,7 +365,7 @@ async function main() {
     }
   });
 
-  app.post('/templates/:id/apply', async (req, res) => {
+  app.post('/api/templates/:id/apply', async (req, res) => {
     try {
       const task = templateService.applyTemplate(req.params.id, req.body.variables || {});
       res.json({ task });
@@ -365,12 +376,12 @@ async function main() {
   });
 
   // Workflow endpoints
-  app.get('/workflows', (req, res) => {
+  app.get('/api/workflows', (req, res) => {
     const workflows = workflowService.getAllWorkflows();
     res.json({ workflows });
   });
 
-  app.get('/workflows/:id', (req, res) => {
+  app.get('/api/workflows/:id', (req, res) => {
     const workflow = workflowService.getWorkflow(req.params.id);
     if (!workflow) {
       return res.status(404).json({ error: 'Workflow not found' });
@@ -378,7 +389,7 @@ async function main() {
     res.json(workflow);
   });
 
-  app.post('/workflows', (req, res) => {
+  app.post('/api/workflows', (req, res) => {
     try {
       const workflow = workflowService.createWorkflow(req.body);
       res.json(workflow);
@@ -388,7 +399,7 @@ async function main() {
     }
   });
 
-  app.post('/workflows/:id/execute', async (req, res) => {
+  app.post('/api/workflows/:id/execute', async (req, res) => {
     try {
       const execution = await workflowService.executeWorkflow(req.params.id, req.body.variables || {});
       res.json({ execution });
@@ -398,12 +409,12 @@ async function main() {
     }
   });
 
-  app.get('/workflows/:id/executions', (req, res) => {
+  app.get('/api/workflows/:id/executions', (req, res) => {
     const executions = workflowService.getWorkflowExecutions(req.params.id);
     res.json({ executions });
   });
 
-  app.get('/executions/:id', (req, res) => {
+  app.get('/api/executions/:id', (req, res) => {
     const execution = workflowService.getExecution(req.params.id);
     if (!execution) {
       return res.status(404).json({ error: 'Execution not found' });
@@ -411,7 +422,7 @@ async function main() {
     res.json(execution);
   });
 
-  app.post('/git/commit', async (req, res) => {
+  app.post('/api/git/commit', async (req, res) => {
     if (!taskOrchestrator['gitService']) {
       return res.status(404).json({ error: 'Git integration not enabled' });
     }
@@ -426,7 +437,7 @@ async function main() {
     }
   });
 
-  app.delete('/projects/:id', async (req, res) => {
+  app.delete('/api/projects/:id', async (req, res) => {
     try {
       const project = taskOrchestrator.getProject(req.params.id);
       if (!project) {
@@ -447,6 +458,40 @@ async function main() {
       logger.error('Failed to delete project', error);
       res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
+  });
+
+  // Analytics endpoints
+  app.get('/api/analytics/snapshot', (req, res) => {
+    const snapshot = analyticsService.getCurrentSnapshot();
+    res.json(snapshot);
+  });
+
+  app.get('/api/analytics/agents', (req, res) => {
+    const agents = agentRegistry.getAllAgents();
+    const metrics = analyticsService.getAgentMetrics(agents);
+    res.json({ metrics });
+  });
+
+  app.get('/api/analytics/projects', (req, res) => {
+    const projects = Array.from(taskOrchestrator['projects'].values());
+    const metrics = analyticsService.getProjectMetrics(projects);
+    res.json({ metrics });
+  });
+
+  app.get('/api/analytics/tasks', (req, res) => {
+    const metrics = analyticsService.getTaskMetrics();
+    res.json(metrics);
+  });
+
+  app.get('/api/analytics/costs', (req, res) => {
+    const agents = agentRegistry.getAllAgents();
+    const metrics = analyticsService.getCostMetrics(agents);
+    res.json(metrics);
+  });
+
+  app.get('/api/analytics/insights', (req, res) => {
+    const insights = analyticsService.getPerformanceInsights();
+    res.json({ insights });
   });
 
   // Catch-all route for SPA in production

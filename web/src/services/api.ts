@@ -88,6 +88,37 @@ class ApiService {
     const response = await this.client.delete(`/projects/${projectId}`);
     return response.data;
   }
+
+  // Analytics
+  async getAnalyticsSnapshot() {
+    const response = await this.client.get('/analytics/snapshot');
+    return response.data;
+  }
+
+  async getAgentAnalytics() {
+    const response = await this.client.get('/analytics/agents');
+    return response.data;
+  }
+
+  async getProjectAnalytics() {
+    const response = await this.client.get('/analytics/projects');
+    return response.data;
+  }
+
+  async getTaskAnalytics() {
+    const response = await this.client.get('/analytics/tasks');
+    return response.data;
+  }
+
+  async getCostAnalytics() {
+    const response = await this.client.get('/analytics/costs');
+    return response.data;
+  }
+
+  async getPerformanceInsights() {
+    const response = await this.client.get('/analytics/insights');
+    return response.data;
+  }
 }
 
 export const api = new ApiService();

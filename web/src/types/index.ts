@@ -104,3 +104,90 @@ export interface ProjectRequest {
   description: string;
   prd?: string;
 }
+
+// Analytics Types
+export interface MetricSnapshot {
+  timestamp: Date;
+  agents: {
+    total: number;
+    active: number;
+    idle: number;
+    error: number;
+    offline: number;
+  };
+  tasks: {
+    total: number;
+    completed: number;
+    failed: number;
+    pending: number;
+    inProgress: number;
+    successRate: number;
+    averageDuration: number;
+  };
+  projects: {
+    total: number;
+    active: number;
+    completed: number;
+    averageTasksPerProject: number;
+  };
+  workflows: {
+    total: number;
+    executions: number;
+    successRate: number;
+  };
+}
+
+export interface AgentMetrics {
+  agentId: string;
+  name: string;
+  provider: string;
+  tasksCompleted: number;
+  tasksFailed: number;
+  successRate: number;
+  averageResponseTime: number;
+  totalUptime: number;
+  totalCost: number;
+  utilizationRate: number;
+  performance: {
+    lastHour: number;
+    lastDay: number;
+    lastWeek: number;
+    lastMonth: number;
+  };
+}
+
+export interface ProjectMetrics {
+  projectId: string;
+  name: string;
+  status: string;
+  tasksTotal: number;
+  tasksCompleted: number;
+  tasksFailed: number;
+  progressPercentage: number;
+  estimatedCompletion: Date | null;
+  totalDuration: number;
+  totalCost: number;
+  velocity: number;
+}
+
+export interface TaskMetrics {
+  byType: Record<string, { count: number; avgDuration: number; successRate: number }>;
+  byPriority: Record<string, { count: number; avgDuration: number; successRate: number }>;
+  byAgent: Record<string, { count: number; avgDuration: number; successRate: number }>;
+  timeline: Array<{ date: Date; completed: number; failed: number }>;
+}
+
+export interface CostMetrics {
+  totalCost: number;
+  costByAgent: Record<string, number>;
+  costByProject: Record<string, number>;
+  costByDay: Array<{ date: Date; cost: number }>;
+  projectedMonthlyCost: number;
+}
+
+export interface PerformanceInsight {
+  type: 'info' | 'warning' | 'success';
+  title: string;
+  message: string;
+  metric?: number;
+}

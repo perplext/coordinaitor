@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Drawer, AppBar, Toolbar, Typography, IconButton, List, ListItem, ListItemIcon, ListItemText, Chip } from '@mui/material';
-import { Menu as MenuIcon, Dashboard, Memory, Assignment, FolderOpen, Close } from '@mui/icons-material';
+import { Menu as MenuIcon, Dashboard, Memory, Assignment, FolderOpen, Close, Analytics } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
 
@@ -11,6 +11,7 @@ const menuItems = [
   { text: 'Agents', icon: <Memory />, path: '/agents' },
   { text: 'Tasks', icon: <Assignment />, path: '/tasks' },
   { text: 'Projects', icon: <FolderOpen />, path: '/projects' },
+  { text: 'Analytics', icon: <Analytics />, path: '/analytics' },
 ];
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {

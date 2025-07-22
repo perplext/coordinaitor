@@ -8,6 +8,7 @@ import { Tasks } from '@/pages/Tasks';
 import { Projects } from '@/pages/Projects';
 import { ProjectDetail } from '@/pages/ProjectDetail';
 import { TaskDetail } from '@/pages/TaskDetail';
+import { Analytics } from '@/pages/Analytics';
 import { socketService } from '@/services/socket';
 import { useStore } from '@/store/useStore';
 import { useAgents } from '@/hooks/useAgents';
@@ -50,6 +51,7 @@ function App() {
           <Route path="/tasks/:taskId" element={<TaskDetail />} />
           <Route path="/projects" element={<Projects />} />
           <Route path="/projects/:projectId" element={<ProjectDetail />} />
+          <Route path="/analytics" element={<Analytics />} />
         </Routes>
       </Layout>
     </Box>
