@@ -1,0 +1,179 @@
+agents:
+  - id: claude-001
+    name: Claude Code Agent
+    type: cli
+    provider: anthropic
+    version: "3.0"
+    endpoint: http://claude-agent:5001
+    maxConcurrentTasks: 5
+    timeout: 300000
+    capabilities:
+      - name: complex-reasoning
+        description: Advanced reasoning and problem-solving
+        category: planning
+        complexity: complex
+        specialties:
+          - architecture-design
+          - algorithm-optimization
+          - code-review
+      - name: code-generation
+        description: Generate high-quality code
+        category: development
+        complexity: complex
+        languages:
+          - typescript
+          - python
+          - go
+          - rust
+          - java
+        frameworks:
+          - react
+          - django
+          - express
+          - spring
+    cost:
+      perRequest: 0.03
+      perToken: 0.00003
+
+  - id: gemini-001
+    name: Google Gemini Agent
+    type: cli
+    provider: google
+    version: "1.0"
+    endpoint: http://gemini-agent:5002
+    maxConcurrentTasks: 10
+    timeout: 180000
+    capabilities:
+      - name: strategic-planning
+        description: Long-term strategic planning and analysis
+        category: planning
+        complexity: complex
+      - name: multimodal-analysis
+        description: Analyze images, diagrams, and visual content
+        category: design
+        complexity: moderate
+        specialties:
+          - ui-ux-analysis
+          - diagram-interpretation
+      - name: rapid-response
+        description: Quick answers and suggestions
+        category: general
+        complexity: simple
+    cost:
+      perRequest: 0.01
+      monthly: 0
+
+  - id: codex-001
+    name: OpenAI Codex Agent
+    type: cli
+    provider: openai
+    version: "2.0"
+    endpoint: http://codex-agent:5003
+    maxConcurrentTasks: 8
+    timeout: 120000
+    capabilities:
+      - name: rapid-prototyping
+        description: Quickly prototype solutions
+        category: development
+        complexity: moderate
+        languages:
+          - javascript
+          - python
+          - typescript
+        specialties:
+          - api-development
+          - scripting
+      - name: code-completion
+        description: Complete partial code snippets
+        category: development
+        complexity: simple
+      - name: documentation
+        description: Generate code documentation
+        category: general
+        complexity: simple
+    cost:
+      perToken: 0.00002
+
+  - id: kiro-001
+    name: AWS Kiro Agent
+    type: api
+    provider: aws
+    version: "1.0"
+    endpoint: https://kiro.aws.com/api/v1
+    maxConcurrentTasks: 3
+    timeout: 600000
+    capabilities:
+      - name: spec-driven-development
+        description: Generate code from formal specifications
+        category: design
+        complexity: complex
+        specialties:
+          - requirements-to-code
+          - formal-methods
+      - name: requirements-analysis
+        description: Analyze and formalize requirements
+        category: planning
+        complexity: moderate
+        specialties:
+          - ears-syntax
+          - requirement-validation
+    cost:
+      monthly: 19
+
+  - id: q-developer-001
+    name: Amazon Q Developer Agent
+    type: cli
+    provider: aws
+    version: "1.0"
+    endpoint: http://q-developer-agent:5004
+    maxConcurrentTasks: 5
+    timeout: 240000
+    capabilities:
+      - name: aws-integration
+        description: AWS service integration and deployment
+        category: deployment
+        complexity: complex
+        specialties:
+          - cloudformation
+          - lambda
+          - ec2
+          - s3
+      - name: security-analysis
+        description: Security vulnerability analysis
+        category: security
+        complexity: moderate
+        specialties:
+          - vulnerability-scanning
+          - best-practices
+      - name: cli-automation
+        description: CLI and bash automation
+        category: development
+        complexity: simple
+    cost:
+      monthly: 19
+
+  - id: bedrock-001
+    name: Amazon Bedrock Agent
+    type: api
+    provider: aws
+    version: "1.0"
+    endpoint: https://bedrock.us-east-1.amazonaws.com
+    maxConcurrentTasks: 10
+    timeout: 300000
+    capabilities:
+      - name: custom-model-deployment
+        description: Deploy and use custom ML models
+        category: development
+        complexity: complex
+        specialties:
+          - fine-tuning
+          - model-selection
+      - name: ml-optimization
+        description: Machine learning optimization
+        category: testing
+        complexity: complex
+        specialties:
+          - performance-tuning
+          - model-evaluation
+    cost:
+      perToken: 0.00001

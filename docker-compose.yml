@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: orchestrator
+      POSTGRES_PASSWORD: orchestrator
+      POSTGRES_DB: orchestrator
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orchestrator"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  orchestrator:
+    build:
+      context: .
+      dockerfile: docker/base.Dockerfile
+      target: production
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://orchestrator:orchestrator@postgres:5432/orchestrator
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./config:/app/config:ro
+    restart: unless-stopped
+
+  claude-agent:
+    build:
+      context: .
+      dockerfile: docker/agent-claude.Dockerfile
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+    ports:
+      - "5001:5001"
+    restart: unless-stopped
+
+  gemini-agent:
+    build:
+      context: .
+      dockerfile: docker/agent-gemini.Dockerfile
+    environment:
+      GOOGLE_GEMINI_API_KEY: ${GOOGLE_GEMINI_API_KEY}
+    ports:
+      - "5002:5002"
+    restart: unless-stopped
+
+  codex-agent:
+    build:
+      context: .
+      dockerfile: docker/agent-codex.Dockerfile
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    ports:
+      - "5003:5003"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - orchestrator
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  postgres-data:

@@ -1,0 +1,110 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: orchestrator
+  namespace: multi-agent-orchestrator
+spec:
+  selector:
+    app: orchestrator
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
+    - name: mcp
+      port: 4000
+      targetPort: 4000
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orchestrator
+  namespace: multi-agent-orchestrator
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: orchestrator
+  template:
+    metadata:
+      labels:
+        app: orchestrator
+    spec:
+      containers:
+      - name: orchestrator
+        image: multi-agent-orchestrator:latest
+        ports:
+        - containerPort: 3000
+          name: http
+        - containerPort: 4000
+          name: mcp
+        env:
+        - name: NODE_ENV
+          value: production
+        - name: DATABASE_URL
+          value: postgresql://orchestrator:$(DATABASE_PASSWORD)@postgres:5432/orchestrator
+        - name: REDIS_URL
+          value: redis://redis:6379
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: orchestrator-secrets
+              key: DATABASE_PASSWORD
+        - name: MCP_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: orchestrator-secrets
+              key: MCP_SECRET_KEY
+        volumeMounts:
+        - name: config
+          mountPath: /app/config
+          readOnly: true
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: orchestrator-config
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: orchestrator-hpa
+  namespace: multi-agent-orchestrator
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: orchestrator
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

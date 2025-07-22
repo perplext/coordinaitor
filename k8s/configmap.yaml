@@ -1,0 +1,86 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: orchestrator-config
+  namespace: multi-agent-orchestrator
+data:
+  agents.yaml: |
+    agents:
+      - id: claude-001
+        name: Claude Code Agent
+        type: cli
+        provider: anthropic
+        endpoint: http://claude-agent:5001
+        capabilities:
+          - name: complex-reasoning
+            category: planning
+            complexity: complex
+          - name: code-generation
+            category: development
+            complexity: complex
+            languages: ["typescript", "python", "go", "rust"]
+      
+      - id: gemini-001
+        name: Google Gemini Agent
+        type: cli
+        provider: google
+        endpoint: http://gemini-agent:5002
+        capabilities:
+          - name: strategic-planning
+            category: planning
+            complexity: complex
+          - name: multimodal-analysis
+            category: design
+            complexity: moderate
+      
+      - id: codex-001
+        name: OpenAI Codex Agent
+        type: cli
+        provider: openai
+        endpoint: http://codex-agent:5003
+        capabilities:
+          - name: rapid-prototyping
+            category: development
+            complexity: moderate
+          - name: code-completion
+            category: development
+            complexity: simple
+      
+      - id: kiro-001
+        name: AWS Kiro Agent
+        type: api
+        provider: aws
+        endpoint: https://kiro.aws.com/api/v1
+        capabilities:
+          - name: spec-driven-development
+            category: design
+            complexity: complex
+          - name: requirements-analysis
+            category: planning
+            complexity: moderate
+      
+      - id: q-developer-001
+        name: Amazon Q Developer Agent
+        type: cli
+        provider: aws
+        endpoint: http://q-developer-agent:5004
+        capabilities:
+          - name: aws-integration
+            category: deployment
+            complexity: complex
+          - name: security-analysis
+            category: security
+            complexity: moderate
+      
+      - id: bedrock-001
+        name: Amazon Bedrock Agent
+        type: api
+        provider: aws
+        endpoint: https://bedrock.us-east-1.amazonaws.com
+        capabilities:
+          - name: custom-model-deployment
+            category: development
+            complexity: complex
+          - name: ml-optimization
+            category: testing
+            complexity: complex
