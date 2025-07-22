@@ -1,16 +1,33 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper, Button, Chip, Card, CardContent, Grid } from '@mui/material';
 import { ArrowBack, PlayArrow, CheckCircle, Error, Schedule } from '@mui/icons-material';
 import { useStore } from '@/store/useStore';
 import { format } from 'date-fns';
+import { TaskEstimation } from '@/components/TaskEstimation';
+import { api } from '@/services/api';
 
 export const TaskDetail: React.FC = () => {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
   const { tasks, agents } = useStore();
+  const [estimation, setEstimation] = useState<any>(null);
 
   const task = tasks.find(t => t.id === taskId);
+
+  useEffect(() => {
+    if (task?.id) {
+      // Check if estimation exists in metadata first
+      if (task.metadata?.mlEstimation) {
+        setEstimation(task.metadata.mlEstimation);
+      } else {
+        // Fetch estimation from API
+        api.get(`/tasks/${task.id}/estimation`)
+          .then(response => setEstimation(response.data))
+          .catch(err => console.error('Failed to fetch estimation:', err));
+      }
+    }
+  }, [task?.id]);
 
   if (!task) {
     return (
@@ -173,6 +190,12 @@ export const TaskDetail: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
+          )}
+
+          {estimation && (
+            <Box mb={3}>
+              <TaskEstimation estimation={estimation} showDetails={true} />
+            </Box>
           )}
 
           {task.metadata && Object.keys(task.metadata).length > 0 && (

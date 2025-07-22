@@ -137,6 +137,18 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, onExecute }) 
               variant="outlined"
             />
           )}
+          {task.metadata?.mlEstimation?.complexity && (
+            <Chip
+              label={task.metadata.mlEstimation.complexity}
+              size="small"
+              color={
+                task.metadata.mlEstimation.complexity === 'low' ? 'success' :
+                task.metadata.mlEstimation.complexity === 'medium' ? 'info' :
+                task.metadata.mlEstimation.complexity === 'high' ? 'warning' : 'error'
+              }
+              variant="outlined"
+            />
+          )}
           {task.metadata?.collaborationSessionId && (
             <CollaborationIndicator
               taskId={task.id}
@@ -151,9 +163,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, onExecute }) 
           <Typography variant="caption" color="text.secondary">
             Created: {format(new Date(task.createdAt), 'MMM d, HH:mm')}
           </Typography>
-          {task.completedAt && (
+          {task.completedAt && task.actualDuration && (
             <Typography variant="caption" color="text.secondary">
-              Duration: {((new Date(task.completedAt).getTime() - new Date(task.startedAt!).getTime()) / 1000).toFixed(1)}s
+              Duration: {(task.actualDuration / 1000).toFixed(1)}s
+            </Typography>
+          )}
+          {!task.completedAt && task.estimatedDuration && (
+            <Typography variant="caption" color="text.secondary">
+              Est: {Math.round(task.estimatedDuration / 60000)}m
             </Typography>
           )}
         </Box>

@@ -525,6 +525,25 @@ async function main() {
     }
   });
 
+  // ML Estimation endpoints
+  app.get('/api/tasks/:id/estimation', async (req, res) => {
+    try {
+      const estimation = await taskOrchestrator.getTaskEstimation(req.params.id);
+      if (!estimation) {
+        return res.status(404).json({ error: 'Task not found' });
+      }
+      res.json(estimation);
+    } catch (error) {
+      logger.error('Failed to get task estimation', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  app.get('/api/ml/model-stats', (req, res) => {
+    const stats = taskOrchestrator.getMLModelStats();
+    res.json(stats);
+  });
+
   // Catch-all route for SPA in production
   if (process.env.NODE_ENV === 'production') {
     app.get('*', (req, res) => {

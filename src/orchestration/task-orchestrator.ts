@@ -12,6 +12,7 @@ import { AgentRequest } from '../interfaces/agent.interface';
 import { GitService, GitConfig } from '../services/git-service';
 import { NotificationService, NotificationConfig } from '../services/notification-service';
 import { CollaborationManager, CollaborationStrategy } from '../collaboration/collaboration-manager';
+import { MLEstimationService, TaskEstimation } from '../services/ml-estimation-service';
 import winston from 'winston';
 
 export class TaskOrchestrator extends EventEmitter {
@@ -23,6 +24,7 @@ export class TaskOrchestrator extends EventEmitter {
   private gitService: GitService | null = null;
   private notificationService: NotificationService | null = null;
   private collaborationManager: CollaborationManager;
+  private mlEstimationService: MLEstimationService;
 
   constructor(
     private agentRegistry: AgentRegistry,
@@ -56,7 +58,41 @@ export class TaskOrchestrator extends EventEmitter {
     this.collaborationManager = new CollaborationManager(agentRegistry, communicationHub);
     this.setupCollaborationHandlers();
 
+    this.mlEstimationService = new MLEstimationService();
+    this.setupMLHandlers();
+
     this.startTaskProcessor();
+  }
+
+  private setupMLHandlers(): void {
+    // Update ML model when tasks complete
+    this.on('task:completed', async ({ task, response }) => {
+      if (task.actualDuration && task.assignedAgent) {
+        const agentCount = task.metadata?.collaborationAgents?.length || 1;
+        const cost = response?.cost || 0;
+        
+        await this.mlEstimationService.updateModel(
+          task,
+          task.actualDuration,
+          true,
+          agentCount,
+          cost
+        );
+      }
+    });
+
+    this.on('task:failed', async ({ task }) => {
+      if (task.actualDuration && task.assignedAgent) {
+        const agentCount = task.metadata?.collaborationAgents?.length || 1;
+        
+        await this.mlEstimationService.updateModel(
+          task,
+          task.actualDuration,
+          false,
+          agentCount
+        );
+      }
+    });
   }
 
   private setupCollaborationHandlers(): void {
@@ -105,11 +141,21 @@ export class TaskOrchestrator extends EventEmitter {
       metadata: params.context
     };
 
+    // Get ML estimation
+    const availableAgents = this.agentRegistry.getAllAgents();
+    const estimation = await this.mlEstimationService.estimateTask(task, availableAgents);
+    
+    task.estimatedDuration = estimation.estimatedDuration;
+    task.metadata = {
+      ...task.metadata,
+      mlEstimation: estimation
+    };
+
     this.tasks.set(task.id, task);
     this.taskQueue.push(task);
     this.sortTaskQueue();
     
-    this.logger.info(`Task created: ${task.id} - ${task.title}`);
+    this.logger.info(`Task created: ${task.id} - ${task.title} (estimated: ${estimation.estimatedDuration}ms)`);
     this.emit('task:created', task);
     
     return task;
@@ -401,6 +447,14 @@ For each task, specify:
   }
 
   private requiresCollaboration(task: Task): boolean {
+    // Check ML estimation recommendation first
+    if (task.metadata?.mlEstimation) {
+      const estimation = task.metadata.mlEstimation as TaskEstimation;
+      if (estimation.recommendedStrategy === 'collaboration') {
+        return true;
+      }
+    }
+
     // Determine if task requires collaboration based on complexity
     const complexityIndicators = [
       'multiple agents',
@@ -546,5 +600,29 @@ For each task, specify:
 
   public getCollaborationSession(sessionId: string) {
     return this.collaborationManager.getSession(sessionId);
+  }
+
+  public async getTaskEstimation(taskId: string): Promise<TaskEstimation | null> {
+    const task = this.tasks.get(taskId);
+    if (!task) return null;
+
+    if (task.metadata?.mlEstimation) {
+      return task.metadata.mlEstimation as TaskEstimation;
+    }
+
+    // Generate new estimation
+    const availableAgents = this.agentRegistry.getAllAgents();
+    const estimation = await this.mlEstimationService.estimateTask(task, availableAgents);
+    
+    task.metadata = {
+      ...task.metadata,
+      mlEstimation: estimation
+    };
+
+    return estimation;
+  }
+
+  public getMLModelStats() {
+    return this.mlEstimationService.getModelStats();
   }
 }
