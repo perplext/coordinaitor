@@ -3,6 +3,7 @@ import { Card, CardContent, Typography, Box, Chip, IconButton, Tooltip } from '@
 import { PlayArrow, CheckCircle, Error, Block, Schedule, PriorityHigh } from '@mui/icons-material';
 import { Task } from '@/types';
 import { format } from 'date-fns';
+import { CollaborationIndicator } from './CollaborationIndicator';
 
 interface TaskCardProps {
   task: Task;
@@ -134,6 +135,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, onExecute }) 
               label={`Agent: ${task.assignedAgent}`}
               size="small"
               variant="outlined"
+            />
+          )}
+          {task.metadata?.collaborationSessionId && (
+            <CollaborationIndicator
+              taskId={task.id}
+              sessionId={task.metadata.collaborationSessionId}
+              agentCount={task.metadata.collaborationAgents?.length}
+              status={task.status === 'completed' ? 'completed' : 'executing'}
             />
           )}
         </Box>

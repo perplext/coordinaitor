@@ -9,6 +9,9 @@ import {
   MenuItem,
   Box,
   Typography,
+  FormControlLabel,
+  Switch,
+  Alert,
 } from '@mui/material';
 import { TaskRequest } from '@/types';
 
@@ -25,16 +28,18 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onClos
     priority: 'medium',
     context: {},
   });
+  const [useCollaboration, setUseCollaboration] = useState(false);
 
   const handleCreate = () => {
     if (task.prompt.trim()) {
-      onCreate(task);
+      onCreate({ ...task, useCollaboration });
       setTask({
         prompt: '',
         type: 'implementation',
         priority: 'medium',
         context: {},
       });
+      setUseCollaboration(false);
     }
   };
 
@@ -128,6 +133,29 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onClos
             fullWidth
             placeholder="Any specific requirements or constraints"
           />
+
+          <Box sx={{ mt: 2, p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={useCollaboration}
+                  onChange={(e) => setUseCollaboration(e.target.checked)}
+                />
+              }
+              label="Enable Multi-Agent Collaboration"
+            />
+            {useCollaboration && (
+              <Alert severity="info" sx={{ mt: 1 }}>
+                Multiple agents will collaborate on this task. The system will automatically:
+                <ul style={{ margin: '8px 0' }}>
+                  <li>Select the best agents for the task</li>
+                  <li>Choose an appropriate collaboration strategy</li>
+                  <li>Coordinate agent efforts to achieve better results</li>
+                </ul>
+                This is recommended for complex, cross-functional, or high-priority tasks.
+              </Alert>
+            )}
+          </Box>
         </Box>
       </DialogContent>
       <DialogActions>

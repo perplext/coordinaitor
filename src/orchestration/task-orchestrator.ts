@@ -11,6 +11,7 @@ import {
 import { AgentRequest } from '../interfaces/agent.interface';
 import { GitService, GitConfig } from '../services/git-service';
 import { NotificationService, NotificationConfig } from '../services/notification-service';
+import { CollaborationManager, CollaborationStrategy } from '../collaboration/collaboration-manager';
 import winston from 'winston';
 
 export class TaskOrchestrator extends EventEmitter {
@@ -21,6 +22,7 @@ export class TaskOrchestrator extends EventEmitter {
   private logger: winston.Logger;
   private gitService: GitService | null = null;
   private notificationService: NotificationService | null = null;
+  private collaborationManager: CollaborationManager;
 
   constructor(
     private agentRegistry: AgentRegistry,
@@ -51,7 +53,35 @@ export class TaskOrchestrator extends EventEmitter {
       this.notificationService = new NotificationService(notificationConfig);
     }
 
+    this.collaborationManager = new CollaborationManager(agentRegistry, communicationHub);
+    this.setupCollaborationHandlers();
+
     this.startTaskProcessor();
+  }
+
+  private setupCollaborationHandlers(): void {
+    this.collaborationManager.on('session:completed', (session) => {
+      this.logger.info(`Collaboration session ${session.id} completed for task ${session.taskId}`);
+      
+      const task = this.tasks.get(session.taskId);
+      if (task && session.results.length > 0) {
+        task.output = session.results;
+        task.status = 'completed';
+        task.completedAt = new Date();
+        this.emit('task:completed', { task, collaboration: true });
+      }
+    });
+
+    this.collaborationManager.on('session:failed', ({ session, error }) => {
+      this.logger.error(`Collaboration session ${session.id} failed:`, error);
+      
+      const task = this.tasks.get(session.taskId);
+      if (task) {
+        task.status = 'failed';
+        task.error = error.message;
+        this.emit('task:failed', { task, error, collaboration: true });
+      }
+    });
   }
 
   public async createTask(params: {
@@ -189,10 +219,15 @@ For each task, specify:
     return tasks;
   }
 
-  public async executeTask(taskId: string): Promise<any> {
+  public async executeTask(taskId: string, useCollaboration: boolean = false): Promise<any> {
     const task = this.tasks.get(taskId);
     if (!task) {
       throw new Error('Task not found');
+    }
+
+    // Check if task requires collaboration
+    if (useCollaboration || this.requiresCollaboration(task)) {
+      return this.executeTaskWithCollaboration(task);
     }
 
     const agentScores = this.agentRegistry.findBestAgentForTask(task);
@@ -363,5 +398,153 @@ For each task, specify:
 
   public getRunningTasks(): Map<string, { agentId: string, startTime: Date }> {
     return new Map(this.runningTasks);
+  }
+
+  private requiresCollaboration(task: Task): boolean {
+    // Determine if task requires collaboration based on complexity
+    const complexityIndicators = [
+      'multiple agents',
+      'cross-functional',
+      'full stack',
+      'end-to-end',
+      'comprehensive',
+      'integrate',
+      'coordinate'
+    ];
+
+    const description = task.description.toLowerCase();
+    const hasComplexityIndicator = complexityIndicators.some(indicator => 
+      description.includes(indicator)
+    );
+
+    // High priority complex tasks benefit from collaboration
+    const isHighComplexity = task.priority === 'critical' || 
+      (task.priority === 'high' && hasComplexityIndicator);
+
+    // Large tasks with multiple requirements
+    const hasMultipleRequirements = task.requirements && task.requirements.length > 3;
+
+    return isHighComplexity || hasMultipleRequirements || hasComplexityIndicator;
+  }
+
+  private async executeTaskWithCollaboration(task: Task): Promise<any> {
+    this.logger.info(`Executing task ${task.id} with collaboration`);
+
+    // Determine collaboration strategy
+    const strategy = this.determineCollaborationStrategy(task);
+
+    try {
+      // Create collaboration session
+      const session = await this.collaborationManager.createCollaborationSession(task, strategy);
+      
+      task.status = 'in_progress';
+      task.metadata = {
+        ...task.metadata,
+        collaborationSessionId: session.id,
+        collaborationAgents: session.agents
+      };
+
+      // Execute collaboration
+      const results = await this.collaborationManager.executeCollaborationSession(session.id);
+      
+      // Process results
+      const synthesizedResult = this.synthesizeCollaborationResults(results);
+      
+      task.status = 'completed';
+      task.output = synthesizedResult;
+      task.completedAt = new Date();
+      task.actualDuration = Date.now() - task.startedAt!.getTime();
+
+      this.logger.info(`Task ${task.id} completed with collaboration`);
+      
+      // Auto-commit if enabled
+      if (this.gitService) {
+        try {
+          const commitInfo = await this.gitService.autoCommitChanges(
+            task.id, 
+            `[Collaboration] ${task.title}`
+          );
+          if (commitInfo) {
+            task.metadata.gitCommit = commitInfo.hash;
+          }
+        } catch (error) {
+          this.logger.error('Git auto-commit failed:', error);
+        }
+      }
+
+      // Send notification
+      if (this.notificationService) {
+        this.notificationService.notifyTaskCompleted(
+          task,
+          { id: 'collaboration', name: 'Multi-Agent Collaboration' } as any,
+          task.actualDuration
+        ).catch(err => {
+          this.logger.error('Failed to send notification:', err);
+        });
+      }
+
+      return synthesizedResult;
+    } catch (error) {
+      task.status = 'failed';
+      task.error = error instanceof Error ? error.message : 'Collaboration failed';
+      
+      this.logger.error(`Task ${task.id} collaboration failed:`, error);
+      this.emit('task:error', { task, error });
+      
+      throw error;
+    }
+  }
+
+  private determineCollaborationStrategy(task: Task): CollaborationStrategy {
+    const description = task.description.toLowerCase();
+
+    // Consensus for design and architecture decisions
+    if (task.type === 'design' || description.includes('architecture')) {
+      return { type: 'consensus', config: {} };
+    }
+
+    // Parallel for independent components
+    if (description.includes('frontend') && description.includes('backend')) {
+      return { type: 'parallel', config: {} };
+    }
+
+    // Hierarchical for complex multi-step tasks
+    if (task.priority === 'critical' || task.requirements?.length > 5) {
+      return { type: 'hierarchical', config: {} };
+    }
+
+    // Default to sequential
+    return { type: 'sequential', config: {} };
+  }
+
+  private synthesizeCollaborationResults(results: any[]): any {
+    // Combine results from multiple agents
+    const synthesis = {
+      summary: 'Task completed through multi-agent collaboration',
+      results: results,
+      combinedOutput: {},
+      metadata: {
+        agentCount: new Set(results.map(r => r.agentId)).size,
+        totalDuration: results.reduce((sum, r) => sum + r.duration, 0),
+        timestamp: new Date()
+      }
+    };
+
+    // Merge outputs
+    for (const result of results) {
+      if (result.output && typeof result.output === 'object') {
+        Object.assign(synthesis.combinedOutput, result.output);
+      }
+    }
+
+    return synthesis;
+  }
+
+  public getCollaborationSessions() {
+    return this.collaborationManager.getAllSessions();
+  }
+
+  public getCollaborationSession(sessionId: string) {
+    return this.collaborationManager.getSession(sessionId);
   }
 }

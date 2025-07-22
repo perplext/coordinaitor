@@ -97,6 +97,7 @@ export interface TaskRequest {
   context?: any;
   projectId?: string;
   dependencies?: string[];
+  useCollaboration?: boolean;
 }
 
 export interface ProjectRequest {

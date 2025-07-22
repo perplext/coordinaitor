@@ -183,7 +183,7 @@ async function main() {
 
   app.post('/api/tasks', async (req, res) => {
     try {
-      const { prompt, type, priority, context } = req.body;
+      const { prompt, type, priority, context, useCollaboration } = req.body;
       const task = await taskOrchestrator.createTask({
         prompt,
         type: type || 'general',
@@ -191,7 +191,7 @@ async function main() {
         context
       });
       
-      const result = await taskOrchestrator.executeTask(task.id);
+      const result = await taskOrchestrator.executeTask(task.id, useCollaboration);
       res.json({ task, result });
     } catch (error) {
       logger.error('Task execution failed', error);
@@ -492,6 +492,37 @@ async function main() {
   app.get('/api/analytics/insights', (req, res) => {
     const insights = analyticsService.getPerformanceInsights();
     res.json({ insights });
+  });
+
+  // Collaboration endpoints
+  app.get('/api/collaboration/sessions', (req, res) => {
+    const sessions = taskOrchestrator.getCollaborationSessions();
+    res.json({ sessions });
+  });
+
+  app.get('/api/collaboration/sessions/:id', (req, res) => {
+    const session = taskOrchestrator.getCollaborationSession(req.params.id);
+    if (!session) {
+      return res.status(404).json({ error: 'Collaboration session not found' });
+    }
+    res.json(session);
+  });
+
+  app.post('/api/tasks/:id/collaborate', async (req, res) => {
+    try {
+      const task = taskOrchestrator.getTask(req.params.id);
+      if (!task) {
+        return res.status(404).json({ error: 'Task not found' });
+      }
+      
+      const result = await taskOrchestrator.executeTask(task.id, true);
+      res.json({ task, result });
+    } catch (error) {
+      logger.error('Collaboration execution failed', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
   });
 
   // Catch-all route for SPA in production

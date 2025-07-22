@@ -62,4 +62,25 @@ export abstract class BaseAgent {
   abstract execute(request: AgentRequest): Promise<AgentResponse>;
   abstract getStatus(): AgentStatus;
   abstract shutdown(): Promise<void>;
+  
+  getCapabilities(): AgentCapability[] {
+    return this.config.capabilities;
+  }
+  
+  getCost(): AgentConfig['cost'] {
+    return this.config.cost;
+  }
+  
+  isHealthy(): boolean {
+    const status = this.getStatus();
+    return status.state !== 'error' && status.state !== 'offline';
+  }
+}
+
+export interface Agent extends BaseAgent {
+  id: string;
+  name: string;
+  provider: string;
+  capabilities: AgentCapability[];
+  status: AgentStatus;
 }
