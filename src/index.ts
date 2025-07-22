@@ -94,7 +94,23 @@ async function main() {
     } : undefined
   };
 
-  const taskOrchestrator = new TaskOrchestrator(agentRegistry, communicationHub, gitConfig, notificationConfig);
+  // Security configuration
+  const securityConfig = {
+    enabled: process.env.ENABLE_SECURITY_SCAN !== 'false',
+    tools: {
+      npm: true,
+      trivy: process.env.ENABLE_TRIVY === 'true',
+      semgrep: process.env.ENABLE_SEMGREP === 'true',
+      gitleaks: process.env.ENABLE_GITLEAKS === 'true',
+      eslintSecurity: true
+    },
+    policy: {
+      blockOnCritical: process.env.BLOCK_ON_CRITICAL !== 'false',
+      blockOnHigh: process.env.BLOCK_ON_HIGH === 'true'
+    }
+  };
+
+  const taskOrchestrator = new TaskOrchestrator(agentRegistry, communicationHub, gitConfig, notificationConfig, securityConfig);
   
   // Initialize services
   const templateService = new TemplateService(path.join(__dirname, '../templates'));
@@ -542,6 +558,41 @@ async function main() {
   app.get('/api/ml/model-stats', (req, res) => {
     const stats = taskOrchestrator.getMLModelStats();
     res.json(stats);
+  });
+
+  // Security endpoints
+  app.post('/api/tasks/:id/security-scan', async (req, res) => {
+    try {
+      const results = await taskOrchestrator.runManualSecurityScan(req.params.id);
+      res.json({ results });
+    } catch (error) {
+      logger.error('Failed to run security scan', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  app.get('/api/security/scans', (req, res) => {
+    const { taskId } = req.query;
+    const results = taskOrchestrator.getSecurityScanResults(taskId as string);
+    res.json({ results });
+  });
+
+  app.get('/api/security/scans/:taskId/report', async (req, res) => {
+    try {
+      const results = taskOrchestrator.getSecurityScanResults(req.params.taskId);
+      if (results.length === 0) {
+        return res.status(404).json({ error: 'No security scan results found for this task' });
+      }
+      
+      const securityScanner = (taskOrchestrator as any).securityScanner;
+      const report = await securityScanner.generateSecurityReport(results);
+      
+      res.setHeader('Content-Type', 'text/markdown');
+      res.send(report);
+    } catch (error) {
+      logger.error('Failed to generate security report', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+    }
   });
 
   // Catch-all route for SPA in production

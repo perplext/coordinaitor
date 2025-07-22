@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent, Typography, Box, Chip, IconButton, Tooltip } from '@mui/material';
-import { PlayArrow, CheckCircle, Error, Block, Schedule, PriorityHigh } from '@mui/icons-material';
+import { PlayArrow, CheckCircle, Error, Block, Schedule, PriorityHigh, Security, Warning } from '@mui/icons-material';
 import { Task } from '@/types';
 import { format } from 'date-fns';
 import { CollaborationIndicator } from './CollaborationIndicator';
@@ -180,6 +180,37 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, onExecute }) 
             <Typography variant="caption" color="text.secondary">
               Dependencies: {task.dependencies.length}
             </Typography>
+          </Box>
+        )}
+
+        {task.metadata?.securityScan && (
+          <Box mt={1} display="flex" alignItems="center" gap={0.5}>
+            <Security fontSize="small" color="primary" />
+            <Typography variant="caption" color="text.secondary">
+              Security scan: 
+            </Typography>
+            {task.metadata.securityScan.results?.some((r: any) => r.findings?.critical > 0) ? (
+              <Chip
+                icon={<Warning />}
+                label="Critical issues"
+                color="error"
+                size="small"
+              />
+            ) : task.metadata.securityScan.results?.some((r: any) => r.findings?.high > 0) ? (
+              <Chip
+                icon={<Warning />}
+                label="High issues"
+                color="warning"
+                size="small"
+              />
+            ) : (
+              <Chip
+                icon={<CheckCircle />}
+                label="Passed"
+                color="success"
+                size="small"
+              />
+            )}
           </Box>
         )}
 

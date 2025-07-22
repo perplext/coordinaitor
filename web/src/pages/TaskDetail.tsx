@@ -5,6 +5,7 @@ import { ArrowBack, PlayArrow, CheckCircle, Error, Schedule } from '@mui/icons-m
 import { useStore } from '@/store/useStore';
 import { format } from 'date-fns';
 import { TaskEstimation } from '@/components/TaskEstimation';
+import { SecurityScanResults } from '@/components/SecurityScanResults';
 import { api } from '@/services/api';
 
 export const TaskDetail: React.FC = () => {
@@ -195,6 +196,12 @@ export const TaskDetail: React.FC = () => {
           {estimation && (
             <Box mb={3}>
               <TaskEstimation estimation={estimation} showDetails={true} />
+            </Box>
+          )}
+
+          {(task.status === 'completed' || task.metadata?.securityScan) && (
+            <Box mb={3}>
+              <SecurityScanResults taskId={task.id} autoScan={!!task.metadata?.securityScan} />
             </Box>
           )}
 

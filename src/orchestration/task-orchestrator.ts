@@ -13,6 +13,7 @@ import { GitService, GitConfig } from '../services/git-service';
 import { NotificationService, NotificationConfig } from '../services/notification-service';
 import { CollaborationManager, CollaborationStrategy } from '../collaboration/collaboration-manager';
 import { MLEstimationService, TaskEstimation } from '../services/ml-estimation-service';
+import { SecurityScannerService, SecurityScanResult, ScannerConfig } from '../services/security-scanner-service';
 import winston from 'winston';
 
 export class TaskOrchestrator extends EventEmitter {
@@ -25,12 +26,14 @@ export class TaskOrchestrator extends EventEmitter {
   private notificationService: NotificationService | null = null;
   private collaborationManager: CollaborationManager;
   private mlEstimationService: MLEstimationService;
+  private securityScanner: SecurityScannerService;
 
   constructor(
     private agentRegistry: AgentRegistry,
     private communicationHub: CommunicationHubImplementation,
     gitConfig?: GitConfig,
-    notificationConfig?: NotificationConfig
+    notificationConfig?: NotificationConfig,
+    securityConfig?: ScannerConfig
   ) {
     super();
     
@@ -61,7 +64,21 @@ export class TaskOrchestrator extends EventEmitter {
     this.mlEstimationService = new MLEstimationService();
     this.setupMLHandlers();
 
+    this.securityScanner = new SecurityScannerService(securityConfig);
+    this.setupSecurityHandlers();
+
     this.startTaskProcessor();
+  }
+
+  private setupSecurityHandlers(): void {
+    this.securityScanner.on('scan:completed', (result) => {
+      this.logger.info(`Security scan completed: ${result.tool} found ${result.findings.length} issues`);
+    });
+
+    this.securityScanner.on('policy:violated', ({ task, violations }) => {
+      this.logger.error(`Security policy violations for task ${task.id}:`, violations);
+      this.emit('security:violation', { task, violations });
+    });
   }
 
   private setupMLHandlers(): void {
@@ -317,6 +334,26 @@ For each task, specify:
         task.actualDuration = response.duration;
         
         this.logger.info(`Task ${taskId} completed successfully`);
+        
+        // Run security scan if task involves code changes
+        if (this.shouldRunSecurityScan(task)) {
+          try {
+            const scanResults = await this.runSecurityScan(task);
+            task.metadata = {
+              ...task.metadata,
+              securityScan: {
+                completed: true,
+                results: scanResults.map(r => ({
+                  tool: r.tool,
+                  findings: r.summary,
+                  status: r.status
+                }))
+              }
+            };
+          } catch (error) {
+            this.logger.error('Security scan failed:', error);
+          }
+        }
         
         // Auto-commit changes if Git is enabled
         if (this.gitService) {
@@ -624,5 +661,40 @@ For each task, specify:
 
   public getMLModelStats() {
     return this.mlEstimationService.getModelStats();
+  }
+
+  private shouldRunSecurityScan(task: Task): boolean {
+    // Run security scans for implementation, deployment, and review tasks
+    return ['implementation', 'deployment', 'review'].includes(task.type);
+  }
+
+  private async runSecurityScan(task: Task): Promise<SecurityScanResult[]> {
+    // Use project path or current working directory
+    const scanPath = this.gitService?.config.repoPath || process.cwd();
+    
+    this.logger.info(`Running security scan for task ${task.id} in ${scanPath}`);
+    const results = await this.securityScanner.scanTask(task, scanPath);
+    
+    // Generate and save report
+    if (results.length > 0) {
+      const report = await this.securityScanner.generateSecurityReport(results);
+      // Could save report to file or attach to task
+      this.emit('security:report', { task, report, results });
+    }
+    
+    return results;
+  }
+
+  public async runManualSecurityScan(taskId: string): Promise<SecurityScanResult[]> {
+    const task = this.tasks.get(taskId);
+    if (!task) {
+      throw new Error('Task not found');
+    }
+    
+    return this.runSecurityScan(task);
+  }
+
+  public getSecurityScanResults(taskId?: string): SecurityScanResult[] {
+    return this.securityScanner.getScanResults(taskId);
   }
 }
