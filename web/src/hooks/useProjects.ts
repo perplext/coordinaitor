@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/services/api';
+import { apiService } from '@/services/api';
 import { useStore } from '@/store/useStore';
 import { useEffect } from 'react';
 import { ProjectRequest } from '@/types';
@@ -11,7 +11,7 @@ export const useProjects = () => {
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => api.getProjects(),
+    queryFn: () => apiService.getProjects(),
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
@@ -22,7 +22,7 @@ export const useProjects = () => {
   }, [data, setProjects]);
 
   const createProjectMutation = useMutation({
-    mutationFn: (project: ProjectRequest) => api.createProject(project),
+    mutationFn: (project: ProjectRequest) => apiService.createProject(project),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -35,7 +35,7 @@ export const useProjects = () => {
   });
 
   const deleteProjectMutation = useMutation({
-    mutationFn: (projectId: string) => api.deleteProject(projectId),
+    mutationFn: (projectId: string) => apiService.deleteProject(projectId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -61,7 +61,7 @@ export const useProjects = () => {
 export const useProjectTasks = (projectId: string) => {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['projects', projectId, 'tasks'],
-    queryFn: () => api.getProjectTasks(projectId),
+    queryFn: () => apiService.getProjectTasks(projectId),
     enabled: !!projectId,
   });
 

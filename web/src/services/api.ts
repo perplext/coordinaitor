@@ -12,13 +12,41 @@ class ApiService {
       },
     });
 
+    // Request interceptor to add auth token
+    this.client.interceptors.request.use(
+      (config) => {
+        // Token is set by auth store when user logs in
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+
+    // Response interceptor to handle errors
     this.client.interceptors.response.use(
       (response) => response,
       (error) => {
         console.error('API Error:', error);
+        
+        // Handle 401 errors
+        if (error.response?.status === 401) {
+          // Token might be expired, auth store will handle logout
+          const authStore = (window as any).authStore;
+          if (authStore) {
+            authStore.logout();
+            window.location.href = '/login';
+          }
+        }
+        
         return Promise.reject(error);
       }
     );
+  }
+
+  // Expose the axios instance
+  get axios() {
+    return this.client;
   }
 
   // Health check
@@ -121,4 +149,12 @@ class ApiService {
   }
 }
 
-export const api = new ApiService();
+export const apiService = new ApiService();
+export const api = apiService.axios;
+
+// Make auth store available to API interceptor
+if (typeof window !== 'undefined') {
+  import('@/store/authStore').then(({ useAuthStore }) => {
+    (window as any).authStore = useAuthStore.getState();
+  });
+}

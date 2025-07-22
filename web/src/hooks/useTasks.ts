@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/services/api';
+import { apiService } from '@/services/api';
 import { useStore } from '@/store/useStore';
 import { useEffect } from 'react';
 import { TaskRequest } from '@/types';
@@ -11,7 +11,7 @@ export const useTasks = (filters?: { status?: string; projectId?: string }) => {
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['tasks', filters],
-    queryFn: () => api.getTasks(filters),
+    queryFn: () => apiService.getTasks(filters),
     refetchInterval: 5000, // Refetch every 5 seconds
   });
 
@@ -22,7 +22,7 @@ export const useTasks = (filters?: { status?: string; projectId?: string }) => {
   }, [data, setTasks]);
 
   const createTaskMutation = useMutation({
-    mutationFn: (task: TaskRequest) => api.createTask(task),
+    mutationFn: (task: TaskRequest) => apiService.createTask(task),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success('Task created successfully');
@@ -35,7 +35,7 @@ export const useTasks = (filters?: { status?: string; projectId?: string }) => {
 
   const updateTaskMutation = useMutation({
     mutationFn: ({ taskId, updates }: { taskId: string; updates: any }) =>
-      api.updateTask(taskId, updates),
+      apiService.updateTask(taskId, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success('Task updated successfully');

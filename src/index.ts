@@ -12,6 +12,9 @@ import { TemplateService } from './services/template-service';
 import { WorkflowService } from './services/workflow-service';
 import { NotificationService } from './services/notification-service';
 import { AnalyticsService } from './services/analytics-service';
+import { AuthService } from './services/auth-service';
+import { createAuthRoutes } from './routes/auth-routes';
+import { createAuthMiddleware } from './middleware/auth-middleware';
 import winston from 'winston';
 import path from 'path';
 
@@ -125,6 +128,11 @@ async function main() {
   );
   const analyticsService = new AnalyticsService();
   
+  // Initialize auth service
+  const authService = new AuthService(process.env.JWT_SECRET);
+  const authMiddleware = createAuthMiddleware(authService);
+  const authRoutes = createAuthRoutes(authService);
+  
   // Connect analytics to task orchestrator
   taskOrchestrator.on('task:completed', ({ task }) => {
     analyticsService.recordTask(task);
@@ -147,16 +155,21 @@ async function main() {
     next();
   });
 
+  // Auth routes (no authentication required)
+  app.use('/api/auth', authRoutes);
+
   // Serve static files in production
   if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, '../../web/dist')));
   }
 
+  // Public health check endpoint
   app.get('/api/health', (req, res) => {
     res.json({ status: 'healthy', timestamp: new Date() });
   });
 
-  app.get('/api/agents', async (req, res) => {
+  // Protected endpoints - Agents
+  app.get('/api/agents', authMiddleware.authenticate, authMiddleware.requirePermission('agents:read'), async (req, res) => {
     const agents = agentRegistry.getAllAgents();
     const agentStatuses = agents.map(agent => ({
       id: agent.config.id,
@@ -173,7 +186,7 @@ async function main() {
     res.json({ agents: agentStatuses });
   });
 
-  app.get('/api/agents/:id/metrics', async (req, res) => {
+  app.get('/api/agents/:id/metrics', authMiddleware.authenticate, authMiddleware.requirePermission('agents:read'), async (req, res) => {
     const agent = agentRegistry.getAgent(req.params.id);
     if (!agent) {
       return res.status(404).json({ error: 'Agent not found' });
@@ -197,7 +210,8 @@ async function main() {
     });
   });
 
-  app.post('/api/tasks', async (req, res) => {
+  // Protected endpoints - Tasks
+  app.post('/api/tasks', authMiddleware.authenticate, authMiddleware.requirePermission('tasks:create'), async (req, res) => {
     try {
       const { prompt, type, priority, context, useCollaboration } = req.body;
       const task = await taskOrchestrator.createTask({
@@ -217,7 +231,7 @@ async function main() {
     }
   });
 
-  app.get('/api/tasks', async (req, res) => {
+  app.get('/api/tasks', authMiddleware.authenticate, authMiddleware.requirePermission('tasks:read'), async (req, res) => {
     try {
       const { status, projectId, agentId } = req.query;
       let tasks = Array.from(taskOrchestrator['tasks'].values());
@@ -239,7 +253,7 @@ async function main() {
     }
   });
 
-  app.get('/api/tasks/:id', async (req, res) => {
+  app.get('/api/tasks/:id', authMiddleware.authenticate, authMiddleware.requirePermission('tasks:read'), async (req, res) => {
     const task = taskOrchestrator.getTask(req.params.id);
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
@@ -247,7 +261,7 @@ async function main() {
     res.json(task);
   });
 
-  app.put('/api/tasks/:id', async (req, res) => {
+  app.put('/api/tasks/:id', authMiddleware.authenticate, authMiddleware.requirePermission('tasks:update'), async (req, res) => {
     try {
       const task = taskOrchestrator.getTask(req.params.id);
       if (!task) {
@@ -263,7 +277,8 @@ async function main() {
     }
   });
 
-  app.get('/api/projects', async (req, res) => {
+  // Protected endpoints - Projects
+  app.get('/api/projects', authMiddleware.authenticate, authMiddleware.requirePermission('projects:read'), async (req, res) => {
     try {
       const projects = Array.from(taskOrchestrator['projects'].values());
       res.json({ projects });
@@ -273,7 +288,7 @@ async function main() {
     }
   });
 
-  app.post('/api/projects', async (req, res) => {
+  app.post('/api/projects', authMiddleware.authenticate, authMiddleware.requirePermission('projects:create'), async (req, res) => {
     try {
       const { name, description, prd } = req.body;
       const project = await taskOrchestrator.createProject({
@@ -292,7 +307,7 @@ async function main() {
     }
   });
 
-  app.get('/api/projects/:id', async (req, res) => {
+  app.get('/api/projects/:id', authMiddleware.authenticate, authMiddleware.requirePermission('projects:read'), async (req, res) => {
     const project = taskOrchestrator.getProject(req.params.id);
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
@@ -300,7 +315,7 @@ async function main() {
     res.json(project);
   });
 
-  app.get('/api/projects/:id/tasks', async (req, res) => {
+  app.get('/api/projects/:id/tasks', authMiddleware.authenticate, authMiddleware.requirePermission('projects:read'), async (req, res) => {
     try {
       const tasks = taskOrchestrator.getTasksByProject(req.params.id);
       res.json({ tasks });
@@ -453,7 +468,7 @@ async function main() {
     }
   });
 
-  app.delete('/api/projects/:id', async (req, res) => {
+  app.delete('/api/projects/:id', authMiddleware.authenticate, authMiddleware.requirePermission('projects:delete'), async (req, res) => {
     try {
       const project = taskOrchestrator.getProject(req.params.id);
       if (!project) {
@@ -476,36 +491,36 @@ async function main() {
     }
   });
 
-  // Analytics endpoints
-  app.get('/api/analytics/snapshot', (req, res) => {
+  // Protected endpoints - Analytics
+  app.get('/api/analytics/snapshot', authMiddleware.authenticate, authMiddleware.requirePermission('analytics:read'), (req, res) => {
     const snapshot = analyticsService.getCurrentSnapshot();
     res.json(snapshot);
   });
 
-  app.get('/api/analytics/agents', (req, res) => {
+  app.get('/api/analytics/agents', authMiddleware.authenticate, authMiddleware.requirePermission('analytics:read'), (req, res) => {
     const agents = agentRegistry.getAllAgents();
     const metrics = analyticsService.getAgentMetrics(agents);
     res.json({ metrics });
   });
 
-  app.get('/api/analytics/projects', (req, res) => {
+  app.get('/api/analytics/projects', authMiddleware.authenticate, authMiddleware.requirePermission('analytics:read'), (req, res) => {
     const projects = Array.from(taskOrchestrator['projects'].values());
     const metrics = analyticsService.getProjectMetrics(projects);
     res.json({ metrics });
   });
 
-  app.get('/api/analytics/tasks', (req, res) => {
+  app.get('/api/analytics/tasks', authMiddleware.authenticate, authMiddleware.requirePermission('analytics:read'), (req, res) => {
     const metrics = analyticsService.getTaskMetrics();
     res.json(metrics);
   });
 
-  app.get('/api/analytics/costs', (req, res) => {
+  app.get('/api/analytics/costs', authMiddleware.authenticate, authMiddleware.requirePermission('analytics:read'), (req, res) => {
     const agents = agentRegistry.getAllAgents();
     const metrics = analyticsService.getCostMetrics(agents);
     res.json(metrics);
   });
 
-  app.get('/api/analytics/insights', (req, res) => {
+  app.get('/api/analytics/insights', authMiddleware.authenticate, authMiddleware.requirePermission('analytics:read'), (req, res) => {
     const insights = analyticsService.getPerformanceInsights();
     res.json({ insights });
   });
@@ -524,7 +539,7 @@ async function main() {
     res.json(session);
   });
 
-  app.post('/api/tasks/:id/collaborate', async (req, res) => {
+  app.post('/api/tasks/:id/collaborate', authMiddleware.authenticate, authMiddleware.requirePermission('tasks:execute'), async (req, res) => {
     try {
       const task = taskOrchestrator.getTask(req.params.id);
       if (!task) {
@@ -560,8 +575,8 @@ async function main() {
     res.json(stats);
   });
 
-  // Security endpoints
-  app.post('/api/tasks/:id/security-scan', async (req, res) => {
+  // Protected endpoints - Security
+  app.post('/api/tasks/:id/security-scan', authMiddleware.authenticate, authMiddleware.requirePermission('security:scan'), async (req, res) => {
     try {
       const results = await taskOrchestrator.runManualSecurityScan(req.params.id);
       res.json({ results });
@@ -571,13 +586,13 @@ async function main() {
     }
   });
 
-  app.get('/api/security/scans', (req, res) => {
+  app.get('/api/security/scans', authMiddleware.authenticate, authMiddleware.requirePermission('security:read'), (req, res) => {
     const { taskId } = req.query;
     const results = taskOrchestrator.getSecurityScanResults(taskId as string);
     res.json({ results });
   });
 
-  app.get('/api/security/scans/:taskId/report', async (req, res) => {
+  app.get('/api/security/scans/:taskId/report', authMiddleware.authenticate, authMiddleware.requirePermission('security:read'), async (req, res) => {
     try {
       const results = taskOrchestrator.getSecurityScanResults(req.params.taskId);
       if (results.length === 0) {

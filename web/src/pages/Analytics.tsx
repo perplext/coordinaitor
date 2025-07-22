@@ -107,12 +107,12 @@ export function Analytics() {
         costsRes,
         insightsRes,
       ] = await Promise.all([
-        api.getAnalyticsSnapshot(),
-        api.getAgentAnalytics(),
-        api.getProjectAnalytics(),
-        api.getTaskAnalytics(),
-        api.getCostAnalytics(),
-        api.getPerformanceInsights(),
+        apiService.getAnalyticsSnapshot(),
+        apiService.getAgentAnalytics(),
+        apiService.getProjectAnalytics(),
+        apiService.getTaskAnalytics(),
+        apiService.getCostAnalytics(),
+        apiService.getPerformanceInsights(),
       ]);
 
       setSnapshot(snapshotRes);

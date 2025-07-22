@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { api } from '@/services/api';
+import { apiService } from '@/services/api';
 import { useStore } from '@/store/useStore';
 import { useEffect } from 'react';
 
@@ -8,7 +8,7 @@ export const useAgents = () => {
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['agents'],
-    queryFn: () => api.getAgents(),
+    queryFn: () => apiService.getAgents(),
     refetchInterval: 10000, // Refetch every 10 seconds
   });
 
