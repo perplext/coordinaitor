@@ -11,7 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import winston from 'winston';
 
 export abstract class BaseAgentImplementation extends BaseAgent {
-  protected status: AgentStatus;
+  public status: AgentStatus;
   protected logger: winston.Logger;
   protected eventEmitter: EventEmitter;
   protected mcpClient: MCPClient | null = null;

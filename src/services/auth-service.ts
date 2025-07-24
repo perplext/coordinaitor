@@ -378,11 +378,11 @@ export class AuthService extends EventEmitter {
 
     const accessToken = jwt.sign(payload, this.jwtSecret, {
       expiresIn: this.jwtExpiresIn
-    });
+    } as jwt.SignOptions);
 
     const refreshToken = jwt.sign(payload, this.jwtSecret, {
       expiresIn: this.refreshTokenExpiresIn
-    });
+    } as jwt.SignOptions);
 
     return {
       accessToken,
@@ -411,6 +411,10 @@ export class AuthService extends EventEmitter {
 
     // Check exact permission
     return user.permissions.some(p => p.id === permission);
+  }
+
+  public hasRole(user: TokenPayload, roleId: string): boolean {
+    return user.roles.includes(roleId);
   }
 
   public async updateUser(userId: string, updates: Partial<User>): Promise<User> {

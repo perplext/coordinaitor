@@ -31,7 +31,7 @@ import {
   Assignment,
   Folder,
 } from '@mui/icons-material';
-import { api } from '@/services/api';
+import { apiService } from '@/services/api';
 import {
   MetricSnapshot,
   AgentMetrics,
@@ -40,6 +40,7 @@ import {
   CostMetrics,
   PerformanceInsight,
 } from '@/types';
+import { error as logError } from '@/utils/logger';
 import {
   LineChart,
   Line,
@@ -124,7 +125,9 @@ export function Analytics() {
       setError(null);
     } catch (err) {
       setError('Failed to fetch analytics data');
-      console.error(err);
+      logError('Failed to fetch analytics data', {
+        operation: 'fetchAnalyticsData'
+      }, err instanceof Error ? err : new Error(String(err)));
     } finally {
       setLoading(false);
     }

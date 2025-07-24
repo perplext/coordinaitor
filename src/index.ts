@@ -7,14 +7,43 @@ import { TaskOrchestrator } from './orchestration/task-orchestrator';
 import { ClaudeAgent } from './agents/implementations/claude-agent';
 import { GeminiAgent } from './agents/implementations/gemini-agent';
 import { CodexAgent } from './agents/implementations/codex-agent';
+import { BedrockAgent } from './agents/implementations/bedrock-agent';
+import { AmazonQAgent } from './agents/implementations/amazon-q-agent';
+import { GitHubCopilotAgent } from './agents/implementations/github-copilot-agent';
+import { CursorAgent } from './agents/implementations/cursor-agent';
+import { PerplexityAgent } from './agents/implementations/perplexity-agent';
+import { CodeWhispererAgent } from './agents/implementations/codewhisperer-agent';
 import { AgentConfig } from './interfaces/agent.interface';
 import { TemplateService } from './services/template-service';
 import { WorkflowService } from './services/workflow-service';
 import { NotificationService } from './services/notification-service';
 import { AnalyticsService } from './services/analytics-service';
+import { ApprovalService } from './services/approval-service';
+import { createApprovalRoutes } from './api/routes/approval.routes';
+import { createProjectRoutes } from './api/routes/project.routes';
+import { createCapacityRoutes } from './api/routes/capacity';
 import { AuthService } from './services/auth-service';
 import { createAuthRoutes } from './routes/auth-routes';
 import { createAuthMiddleware } from './middleware/auth-middleware';
+import { DatabaseService } from './database/database-service';
+import onboardingRoutes from './routes/onboarding';
+import ssoRoutes, { initializeSSORoutes } from './routes/sso';
+import authRoutes, { initializeAuthRoutes } from './routes/auth';
+import { SAMLService } from './services/saml-service';
+import { OAuth2Service } from './services/oauth-service';
+import { createSSOAuthMiddleware } from './middleware/sso-auth-middleware';
+import { createTenantIsolationMiddleware, TenantIsolationConfig } from './middleware/tenant-isolation-middleware';
+import { OrganizationService } from './services/organization-service';
+import { BillingService } from './services/billing-service';
+import { OrganizationConfigService } from './services/organization-config-service';
+import organizationRoutes, { initializeOrganizationRoutes } from './routes/organizations';
+import billingRoutes, { initializeBillingRoutes } from './routes/billing';
+import organizationConfigRoutes, { initializeOrganizationConfigRoutes } from './routes/organization-config';
+import userInvitationRoutes from './routes/user-invitations';
+import marketplaceRoutes, { initializeMarketplaceRoutes } from './routes/marketplace-routes';
+import naturalLanguageRoutes, { initializeNaturalLanguageRoutes } from './routes/natural-language-routes';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger';
 import winston from 'winston';
 import path from 'path';
 
@@ -36,6 +65,16 @@ const logger = winston.createLogger({
 
 async function main() {
   logger.info('Starting Multi-Agent Orchestrator');
+
+  // Initialize database
+  const db = DatabaseService.getInstance();
+  try {
+    await db.initialize();
+    logger.info('Database initialized successfully');
+  } catch (error) {
+    logger.error('Failed to initialize database:', error);
+    process.exit(1);
+  }
 
   const app = express();
   const httpServer = createServer(app);
@@ -70,6 +109,90 @@ async function main() {
     await codexAgent.initialize();
     agentRegistry.registerAgent(codexAgent);
     communicationHub.registerAgent(codexConfig.id);
+  }
+
+  // Register Amazon Bedrock Agent
+  const bedrockConfig = agentRegistry.getAgentConfig('bedrock-001');
+  if (bedrockConfig) {
+    try {
+      const bedrockAgent = new BedrockAgent(bedrockConfig);
+      await bedrockAgent.initialize();
+      agentRegistry.registerAgent(bedrockAgent);
+      communicationHub.registerAgent(bedrockConfig.id);
+      logger.info('Amazon Bedrock agent registered successfully');
+    } catch (error) {
+      logger.warn('Failed to register Amazon Bedrock agent:', error instanceof Error ? error.message : 'Unknown error');
+    }
+  }
+
+  // Register Amazon Q Agent
+  const amazonQConfig = agentRegistry.getAgentConfig('amazon-q-001');
+  if (amazonQConfig) {
+    try {
+      const amazonQAgent = new AmazonQAgent(amazonQConfig);
+      await amazonQAgent.initialize();
+      agentRegistry.registerAgent(amazonQAgent);
+      communicationHub.registerAgent(amazonQConfig.id);
+      logger.info('Amazon Q agent registered successfully');
+    } catch (error) {
+      logger.warn('Failed to register Amazon Q agent:', error instanceof Error ? error.message : 'Unknown error');
+    }
+  }
+
+  // Register GitHub Copilot Agent
+  const copilotConfig = agentRegistry.getAgentConfig('github-copilot-001');
+  if (copilotConfig) {
+    try {
+      const copilotAgent = new GitHubCopilotAgent(copilotConfig);
+      await copilotAgent.initialize();
+      agentRegistry.registerAgent(copilotAgent);
+      communicationHub.registerAgent(copilotConfig.id);
+      logger.info('GitHub Copilot agent registered successfully');
+    } catch (error) {
+      logger.warn('Failed to register GitHub Copilot agent:', error instanceof Error ? error.message : 'Unknown error');
+    }
+  }
+
+  // Register Cursor AI Agent
+  const cursorConfig = agentRegistry.getAgentConfig('cursor-001');
+  if (cursorConfig) {
+    try {
+      const cursorAgent = new CursorAgent(cursorConfig);
+      await cursorAgent.initialize();
+      agentRegistry.registerAgent(cursorAgent);
+      communicationHub.registerAgent(cursorConfig.id);
+      logger.info('Cursor AI agent registered successfully');
+    } catch (error) {
+      logger.warn('Failed to register Cursor AI agent:', error instanceof Error ? error.message : 'Unknown error');
+    }
+  }
+
+  // Register Perplexity AI Agent
+  const perplexityConfig = agentRegistry.getAgentConfig('perplexity-001');
+  if (perplexityConfig) {
+    try {
+      const perplexityAgent = new PerplexityAgent(perplexityConfig);
+      await perplexityAgent.initialize();
+      agentRegistry.registerAgent(perplexityAgent);
+      communicationHub.registerAgent(perplexityConfig.id);
+      logger.info('Perplexity AI agent registered successfully');
+    } catch (error) {
+      logger.warn('Failed to register Perplexity AI agent:', error instanceof Error ? error.message : 'Unknown error');
+    }
+  }
+
+  // Register Amazon CodeWhisperer Agent
+  const codewhispererConfig = agentRegistry.getAgentConfig('codewhisperer-001');
+  if (codewhispererConfig) {
+    try {
+      const codewhispererAgent = new CodeWhispererAgent(codewhispererConfig);
+      await codewhispererAgent.initialize();
+      agentRegistry.registerAgent(codewhispererAgent);
+      communicationHub.registerAgent(codewhispererConfig.id);
+      logger.info('Amazon CodeWhisperer agent registered successfully');
+    } catch (error) {
+      logger.warn('Failed to register Amazon CodeWhisperer agent:', error instanceof Error ? error.message : 'Unknown error');
+    }
   }
 
   // Git configuration
@@ -120,10 +243,12 @@ async function main() {
   const notificationService = notificationConfig.slack || notificationConfig.teams 
     ? new NotificationService(notificationConfig) 
     : null;
+  const approvalService = new ApprovalService(notificationService);
   const workflowService = new WorkflowService(
     taskOrchestrator, 
     templateService, 
     notificationService,
+    approvalService,
     path.join(__dirname, '../workflows')
   );
   const analyticsService = new AnalyticsService();
@@ -131,44 +256,255 @@ async function main() {
   // Initialize auth service
   const authService = new AuthService(process.env.JWT_SECRET);
   const authMiddleware = createAuthMiddleware(authService);
-  const authRoutes = createAuthRoutes(authService);
+  const legacyAuthRoutes = createAuthRoutes(authService);
+  
+  // Initialize SSO services
+  const samlService = new SAMLService();
+  const oauthService = new OAuth2Service();
+  const ssoAuthMiddleware = createSSOAuthMiddleware({
+    jwtSecret: process.env.JWT_SECRET || 'default-secret',
+    jwtExpiry: '24h',
+    sessionExpiry: 24 * 60 * 60 * 1000, // 24 hours
+    requireAuth: true,
+    allowedMethods: ['local', 'saml', 'oauth2', 'oidc']
+  }, samlService, oauthService);
+  
+  // Initialize organization service and tenant isolation
+  const organizationService = new OrganizationService();
+  const tenantConfig: TenantIsolationConfig = {
+    enabled: process.env.MULTI_TENANT_ENABLED === 'true',
+    multiTenantStrategy: (process.env.MULTI_TENANT_STRATEGY as any) || 'subdomain',
+    defaultOrganizationId: process.env.DEFAULT_ORGANIZATION_ID,
+    allowedDomains: process.env.ALLOWED_DOMAINS?.split(','),
+    requireTenantHeader: process.env.REQUIRE_TENANT_HEADER === 'true',
+    tenantHeaderName: process.env.TENANT_HEADER_NAME || 'X-Tenant-ID'
+  };
+  const tenantMiddleware = createTenantIsolationMiddleware(tenantConfig);
+  
+  // Initialize billing service
+  const billingService = new BillingService({
+    provider: (process.env.BILLING_PROVIDER as any) || 'internal',
+    currency: process.env.BILLING_CURRENCY || 'USD',
+    taxRate: parseFloat(process.env.BILLING_TAX_RATE || '0.08')
+  });
+  
+  // Initialize organization configuration service
+  const organizationConfigService = new OrganizationConfigService(agentRegistry);
+  
+  // Initialize SSO routes
+  initializeSSORoutes(samlService, oauthService, ssoAuthMiddleware);
+  initializeAuthRoutes(samlService, oauthService, ssoAuthMiddleware);
+  
+  // Initialize organization routes
+  initializeOrganizationRoutes(organizationService, ssoAuthMiddleware);
+  
+  // Initialize billing routes
+  initializeBillingRoutes(billingService, ssoAuthMiddleware);
+  
+  // Initialize organization configuration routes
+  initializeOrganizationConfigRoutes(organizationConfigService, ssoAuthMiddleware);
+  
+  // Initialize marketplace routes
+  initializeMarketplaceRoutes(agentRegistry, notificationService);
+  
+  // Initialize natural language routes
+  initializeNaturalLanguageRoutes(agentRegistry, taskOrchestrator);
   
   // Connect analytics to task orchestrator
   taskOrchestrator.on('task:completed', ({ task }) => {
     analyticsService.recordTask(task);
+    
+    // Record usage for billing
+    if (task.organizationId) {
+      billingService.recordUsage(task.organizationId, 'tasks', 1, { 
+        taskId: task.id, 
+        type: task.type,
+        status: 'completed'
+      });
+    }
   });
   
   taskOrchestrator.on('task:failed', ({ task }) => {
     analyticsService.recordTask(task);
+    
+    // Record usage for billing (failed tasks still count)
+    if (task.organizationId) {
+      billingService.recordUsage(task.organizationId, 'tasks', 1, { 
+        taskId: task.id, 
+        type: task.type,
+        status: 'failed'
+      });
+    }
   });
 
   app.use(express.json());
+  
+  // Apply tenant isolation middleware early in the pipeline
+  app.use(tenantMiddleware.isolate());
   
   // Enable CORS for development
   app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Tenant-ID');
     if (req.method === 'OPTIONS') {
       return res.sendStatus(200);
     }
     next();
   });
 
-  // Auth routes (no authentication required)
+  // Legacy auth routes (no authentication required)
+  app.use('/api/legacy-auth', legacyAuthRoutes);
+  
+  // New SSO auth routes (no authentication required)
   app.use('/api/auth', authRoutes);
+  
+  // SSO configuration routes (authentication required)
+  app.use('/api/sso', ssoRoutes);
+  
+  // Onboarding routes (authentication required)
+  app.use('/api/onboarding', onboardingRoutes);
+  
+  // Organization routes (authentication required)
+  app.use('/api/organizations', organizationRoutes);
+  
+  // Billing routes (authentication required)
+  app.use('/api/billing', billingRoutes);
+  
+  // Organization configuration routes (authentication required)
+  app.use('/api/organization-config', organizationConfigRoutes);
+  
+  // User invitation routes (authentication required)
+  app.use('/api/invitations', userInvitationRoutes);
+  
+  // Marketplace routes (authentication required)
+  app.use('/api/marketplace', marketplaceRoutes);
+  
+  // Natural language routes (authentication required)
+  app.use('/api/nl', naturalLanguageRoutes);
+  
+  // Approval routes (authentication required)
+  const approvalRoutes = createApprovalRoutes(approvalService);
+  app.use('/api/approvals', approvalRoutes);
 
   // Serve static files in production
   if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, '../../web/dist')));
   }
 
-  // Public health check endpoint
-  app.get('/api/health', (req, res) => {
-    res.json({ status: 'healthy', timestamp: new Date() });
+  // Swagger API documentation
+  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    explorer: true,
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'Multi-Agent Orchestrator API Documentation',
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      tryItOutEnabled: true,
+      filter: true,
+      layout: 'BaseLayout',
+      defaultModelsExpandDepth: 2,
+      defaultModelExpandDepth: 2
+    }
+  }));
+
+  // API specification endpoint
+  app.get('/api/docs.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerSpec);
   });
 
-  // Protected endpoints - Agents
+  /**
+   * @openapi
+   * /api/health:
+   *   get:
+   *     tags:
+   *       - Health
+   *     summary: Health check endpoint
+   *     description: Check the health status of the API service
+   *     responses:
+   *       200:
+   *         description: Service is healthy
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: string
+   *                   example: "healthy"
+   *                 timestamp:
+   *                   type: string
+   *                   format: date-time
+   *                   example: "2023-12-07T10:30:00.000Z"
+   *                 version:
+   *                   type: string
+   *                   example: "1.0.0"
+   *                 uptime:
+   *                   type: number
+   *                   description: Server uptime in seconds
+   *                   example: 86400
+   */
+  app.get('/api/health', (req, res) => {
+    res.json({ 
+      status: 'healthy', 
+      timestamp: new Date(),
+      version: process.env.npm_package_version || '1.0.0',
+      uptime: process.uptime()
+    });
+  });
+
+  /**
+   * @openapi
+   * /api/agents:
+   *   get:
+   *     tags:
+   *       - Agents
+   *     summary: List all registered agents
+   *     description: Retrieve a list of all registered AI agents with their current status and configuration
+   *     security:
+   *       - bearerAuth: []
+   *       - apiKey: []
+   *       - sessionAuth: []
+   *     responses:
+   *       200:
+   *         description: List of agents retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 agents:
+   *                   type: array
+   *                   items:
+   *                     $ref: '#/components/schemas/Agent'
+   *             example:
+   *               agents:
+   *                 - id: "claude-001"
+   *                   name: "Claude Sonnet"
+   *                   type: "llm"
+   *                   provider: "anthropic"
+   *                   version: "3.5"
+   *                   status:
+   *                     state: "idle"
+   *                     totalTasksCompleted: 150
+   *                     successRate: 0.98
+   *                     averageResponseTime: 2500
+   *                   capabilities: ["text-generation", "code-generation"]
+   *                   maxConcurrentTasks: 5
+   *       401:
+   *         description: Authentication required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       403:
+   *         description: Insufficient permissions
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   app.get('/api/agents', authMiddleware.authenticate, authMiddleware.requirePermission('agents:read'), async (req, res) => {
     const agents = agentRegistry.getAllAgents();
     const agentStatuses = agents.map(agent => ({
@@ -210,7 +546,93 @@ async function main() {
     });
   });
 
-  // Protected endpoints - Tasks
+  /**
+   * @openapi
+   * /api/tasks:
+   *   post:
+   *     tags:
+   *       - Tasks
+   *     summary: Create and execute a new task
+   *     description: Create a new task and optionally execute it immediately
+   *     security:
+   *       - bearerAuth: []
+   *       - apiKey: []
+   *       - sessionAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - prompt
+   *             properties:
+   *               prompt:
+   *                 type: string
+   *                 description: Task description or instructions
+   *                 example: "Generate a React component for a user profile card"
+   *               type:
+   *                 type: string
+   *                 enum: [general, code-generation, data-analysis, documentation, testing, review]
+   *                 default: general
+   *                 description: Type of task
+   *               priority:
+   *                 type: string
+   *                 enum: [low, medium, high, urgent]
+   *                 default: medium
+   *                 description: Task priority
+   *               context:
+   *                 type: object
+   *                 description: Additional context and metadata for the task
+   *               useCollaboration:
+   *                 type: boolean
+   *                 default: false
+   *                 description: Whether to use multi-agent collaboration
+   *     responses:
+   *       200:
+   *         description: Task created and executed successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 task:
+   *                   $ref: '#/components/schemas/Task'
+   *                 result:
+   *                   type: object
+   *                   description: Task execution result
+   *             example:
+   *               task:
+   *                 id: "task-123"
+   *                 prompt: "Generate a React component for a user profile card"
+   *                 type: "code-generation"
+   *                 status: "completed"
+   *                 priority: "medium"
+   *               result:
+   *                 output: "// React component code here"
+   *                 artifacts: []
+   *                 metrics:
+   *                   executionTime: 5000
+   *                   tokensUsed: 1500
+   *       401:
+   *         description: Authentication required
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       403:
+   *         description: Insufficient permissions
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       500:
+   *         description: Task execution failed
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   app.post('/api/tasks', authMiddleware.authenticate, authMiddleware.requirePermission('tasks:create'), async (req, res) => {
     try {
       const { prompt, type, priority, context, useCollaboration } = req.body;
@@ -278,52 +700,12 @@ async function main() {
   });
 
   // Protected endpoints - Projects
-  app.get('/api/projects', authMiddleware.authenticate, authMiddleware.requirePermission('projects:read'), async (req, res) => {
-    try {
-      const projects = Array.from(taskOrchestrator['projects'].values());
-      res.json({ projects });
-    } catch (error) {
-      logger.error('Failed to get projects', error);
-      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
-    }
-  });
-
-  app.post('/api/projects', authMiddleware.authenticate, authMiddleware.requirePermission('projects:create'), async (req, res) => {
-    try {
-      const { name, description, prd } = req.body;
-      const project = await taskOrchestrator.createProject({
-        name,
-        description,
-        prd
-      });
-      
-      const tasks = await taskOrchestrator.decomposeProject(project.id);
-      res.json({ project, tasks });
-    } catch (error) {
-      logger.error('Project creation failed', error);
-      res.status(500).json({ 
-        error: error instanceof Error ? error.message : 'Unknown error' 
-      });
-    }
-  });
-
-  app.get('/api/projects/:id', authMiddleware.authenticate, authMiddleware.requirePermission('projects:read'), async (req, res) => {
-    const project = taskOrchestrator.getProject(req.params.id);
-    if (!project) {
-      return res.status(404).json({ error: 'Project not found' });
-    }
-    res.json(project);
-  });
-
-  app.get('/api/projects/:id/tasks', authMiddleware.authenticate, authMiddleware.requirePermission('projects:read'), async (req, res) => {
-    try {
-      const tasks = taskOrchestrator.getTasksByProject(req.params.id);
-      res.json({ tasks });
-    } catch (error) {
-      logger.error('Failed to get project tasks', error);
-      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
-    }
-  });
+  const projectRoutes = createProjectRoutes(taskOrchestrator, taskOrchestrator['prdDecompositionService']);
+  app.use('/api/projects', projectRoutes);
+  
+  // Protected endpoints - Capacity Management
+  const capacityRoutes = createCapacityRoutes(taskOrchestrator);
+  app.use('/api/capacity', authMiddleware.authenticate, authMiddleware.requirePermission('capacity:read'), capacityRoutes);
 
   // Git endpoints
   app.get('/api/git/status', async (req, res) => {
@@ -630,6 +1012,7 @@ async function main() {
     }
     
     await communicationHub.shutdown();
+    await db.close();
     httpServer.close();
     process.exit(0);
   });

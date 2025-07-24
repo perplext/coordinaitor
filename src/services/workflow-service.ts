@@ -12,6 +12,7 @@ import { Task } from '../interfaces/task.interface';
 import { TaskOrchestrator } from '../orchestration/task-orchestrator';
 import { TemplateService } from './template-service';
 import { NotificationService } from './notification-service';
+import { ApprovalService, ApprovalPolicy } from './approval-service';
 import winston from 'winston';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -26,6 +27,7 @@ export class WorkflowService extends EventEmitter {
     private taskOrchestrator: TaskOrchestrator,
     private templateService: TemplateService,
     private notificationService: NotificationService | null = null,
+    private approvalService: ApprovalService | null = null,
     workflowDir: string = './workflows'
   ) {
     super();
@@ -304,6 +306,111 @@ export class WorkflowService extends EventEmitter {
         }
       ]
     });
+
+    // Deployment Workflow with Approval
+    this.createWorkflow({
+      name: 'Production Deployment',
+      description: 'Deploy to production with approval gates',
+      category: 'deployment',
+      tags: ['deployment', 'production', 'approval'],
+      steps: [
+        {
+          id: 'build',
+          name: 'Build Application',
+          type: 'task',
+          taskDefinition: {
+            type: 'implementation',
+            title: 'Build and package application',
+            priority: 'high'
+          }
+        },
+        {
+          id: 'test',
+          name: 'Run Tests',
+          type: 'task',
+          taskDefinition: {
+            type: 'test',
+            title: 'Run all test suites',
+            priority: 'high'
+          },
+          dependencies: ['build']
+        },
+        {
+          id: 'deploy-staging',
+          name: 'Deploy to Staging',
+          type: 'task',
+          taskDefinition: {
+            type: 'deployment',
+            title: 'Deploy to staging environment',
+            priority: 'high'
+          },
+          dependencies: ['test']
+        },
+        {
+          id: 'staging-tests',
+          name: 'Staging Tests',
+          type: 'task',
+          taskDefinition: {
+            type: 'test',
+            title: 'Run smoke tests on staging',
+            priority: 'high'
+          },
+          dependencies: ['deploy-staging']
+        },
+        {
+          id: 'approval-gate',
+          name: 'Production Deployment Approval',
+          type: 'wait',
+          wait: {
+            type: 'approval',
+            approvers: ['admin', 'lead-developer', 'devops-lead'],
+            approvalPolicy: {
+              requiredApprovals: 2,
+              timeoutMs: 3600000, // 1 hour
+              autoRejectAfterTimeout: true
+            }
+          },
+          dependencies: ['staging-tests']
+        },
+        {
+          id: 'deploy-production',
+          name: 'Deploy to Production',
+          type: 'task',
+          taskDefinition: {
+            type: 'deployment',
+            title: 'Deploy to production environment',
+            priority: 'critical'
+          },
+          dependencies: ['approval-gate']
+        },
+        {
+          id: 'production-verify',
+          name: 'Verify Production',
+          type: 'task',
+          taskDefinition: {
+            type: 'test',
+            title: 'Verify production deployment',
+            priority: 'critical'
+          },
+          dependencies: ['deploy-production']
+        }
+      ],
+      variables: [
+        {
+          name: 'version',
+          type: 'string',
+          label: 'Version to Deploy',
+          required: true
+        },
+        {
+          name: 'environment',
+          type: 'string',
+          label: 'Target Environment',
+          required: true,
+          defaultValue: 'production'
+        }
+      ]
+    });
   }
 
   public createWorkflow(params: Omit<Workflow, 'id' | 'createdAt' | 'updatedAt' | 'executionCount'>): Workflow {
@@ -391,9 +498,11 @@ export class WorkflowService extends EventEmitter {
           hasExecutableStep = true;
           await this.executeStep(step, execution, workflow);
           
-          if (stepExecution.status === 'completed') {
+          // Refetch stepExecution after async execution
+          const updatedStepExecution = execution.steps.find(s => s.stepId === step.id)!;
+          if (updatedStepExecution.status === 'completed') {
             completedSteps.add(step.id);
-          } else if (stepExecution.status === 'failed' && !step.retryPolicy) {
+          } else if (updatedStepExecution.status === 'failed' && !step.retryPolicy) {
             execution.status = 'failed';
             execution.error = `Step ${step.name} failed`;
             break;
@@ -626,10 +735,10 @@ export class WorkflowService extends EventEmitter {
       throw new Error('Wait configuration not specified');
     }
 
-    switch (step.wait.type) {
+    switch (step.wait?.type) {
       case 'duration':
-        if (step.wait.duration) {
-          await new Promise(resolve => setTimeout(resolve, step.wait.duration));
+        if (step.wait?.duration) {
+          await new Promise(resolve => setTimeout(resolve, step.wait!.duration!));
         }
         break;
 
@@ -641,8 +750,66 @@ export class WorkflowService extends EventEmitter {
         break;
 
       case 'approval':
-        // TODO: Implement approval mechanism
-        throw new Error('Approval wait not yet implemented');
+        await this.executeApprovalWait(step, stepExecution, execution);
+        break;
+    }
+  }
+
+  private async executeApprovalWait(
+    step: WorkflowStep,
+    stepExecution: WorkflowStepExecution,
+    execution: WorkflowExecution
+  ): Promise<void> {
+    if (!this.approvalService) {
+      throw new Error('Approval service not configured');
+    }
+
+    if (!step.wait?.approvers || step.wait.approvers.length === 0) {
+      throw new Error('No approvers specified for approval wait');
+    }
+
+    // Create approval policy from step configuration
+    const policy: ApprovalPolicy = {
+      requiredApprovals: step.wait.approvalPolicy?.requiredApprovals || 1,
+      allApproversRequired: step.wait.approvalPolicy?.allApproversRequired || false,
+      timeout: step.wait.approvalPolicy?.timeoutMs || step.wait.duration,
+      autoApproveAfterTimeout: step.wait.approvalPolicy?.autoApproveAfterTimeout || false,
+      autoRejectAfterTimeout: step.wait.approvalPolicy?.autoRejectAfterTimeout ?? true
+    };
+
+    // Create approval request
+    const approvalRequest = await this.approvalService.createApprovalRequest({
+      workflowExecutionId: execution.id,
+      workflowStepId: step.id,
+      stepName: step.name,
+      workflowName: this.workflows.get(execution.workflowId)?.name || 'Unknown Workflow',
+      requestedBy: execution.variables.requestedBy || 'system',
+      approvers: step.wait.approvers,
+      policy,
+      metadata: {
+        workflowVariables: execution.variables,
+        stepDependencies: step.dependencies
+      },
+      description: `Approval required for step "${step.name}" in workflow execution ${execution.id}`
+    });
+
+    stepExecution.output = {
+      approvalRequestId: approvalRequest.id,
+      approvers: approvalRequest.approvers,
+      status: 'waiting_for_approval'
+    };
+
+    // Wait for approval
+    const result = await this.approvalService.waitForApproval(approvalRequest.id);
+
+    if (result === 'approved') {
+      stepExecution.output = {
+        ...stepExecution.output,
+        status: 'approved',
+        approvalDetails: await this.approvalService.getApprovalRequest(approvalRequest.id)
+      };
+    } else {
+      throw new Error(`Approval ${result} for step "${step.name}"`);
     }
   }
 
@@ -678,7 +845,7 @@ export class WorkflowService extends EventEmitter {
       
       // Check if variable exists and is truthy
       if (expression in context) {
-        return !!context[expression];
+        return !!(context as any)[expression];
       }
 
       // Default to false for safety

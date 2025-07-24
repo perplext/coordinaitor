@@ -1,6 +1,5 @@
-import React from 'react';
 import { Chip, Tooltip, Box, Typography } from '@mui/material';
-import { Group, Psychology } from '@mui/icons-material';
+import { Group } from '@mui/icons-material';
 
 interface CollaborationIndicatorProps {
   taskId?: string;

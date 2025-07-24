@@ -1,5 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import { Task, Agent } from '@/types';
+import { info as logInfo } from '@/utils/logger';
 
 export type SocketEvent = 
   | 'agent:registered'
@@ -37,12 +38,17 @@ class SocketService {
     if (!this.socket) return;
 
     this.socket.on('connect', () => {
-      console.log('Connected to WebSocket server');
+      logInfo('Connected to WebSocket server', {
+        socketId: this.socket?.id,
+        operation: 'socketConnect'
+      });
       this.emit('connected', true);
     });
 
     this.socket.on('disconnect', () => {
-      console.log('Disconnected from WebSocket server');
+      logInfo('Disconnected from WebSocket server', {
+        operation: 'socketDisconnect'
+      });
       this.emit('connected', false);
     });
 

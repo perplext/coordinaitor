@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { TaskEstimation } from '@/components/TaskEstimation';
 import { SecurityScanResults } from '@/components/SecurityScanResults';
 import { api } from '@/services/api';
+import { error as logError } from '@/utils/logger';
 
 export const TaskDetail: React.FC = () => {
   const { taskId } = useParams<{ taskId: string }>();
@@ -25,7 +26,10 @@ export const TaskDetail: React.FC = () => {
         // Fetch estimation from API
         api.get(`/tasks/${task.id}/estimation`)
           .then(response => setEstimation(response.data))
-          .catch(err => console.error('Failed to fetch estimation:', err));
+          .catch(err => logError('Failed to fetch task estimation', {
+            taskId: task.id,
+            operation: 'fetchEstimation'
+          }, err instanceof Error ? err : new Error(String(err))));
       }
     }
   }, [task?.id]);

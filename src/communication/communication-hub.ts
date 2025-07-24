@@ -232,6 +232,10 @@ export class CommunicationHubImplementation implements CommunicationHub {
     this.logger.info(`Agent ${agentId} connected to MCP server at ${serverUrl}`);
   }
 
+  public on(event: string, handler: (data: any) => void): void {
+    this.eventEmitter.on(event, handler);
+  }
+
   public async shutdown(): Promise<void> {
     for (const [agentId, client] of this.mcpClients) {
       await client.disconnect();

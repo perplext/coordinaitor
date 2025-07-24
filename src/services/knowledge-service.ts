@@ -89,6 +89,7 @@ export class KnowledgeService extends EventEmitter {
   private tagIndex: Map<string, Set<string>> = new Map(); // tag -> entry IDs
   private typeIndex: Map<string, Set<string>> = new Map(); // type -> entry IDs
   private taskIndex: Map<string, Set<string>> = new Map(); // taskId -> entry IDs
+  private patternLearningService?: any; // PatternLearningService
   private logger: winston.Logger;
   private storagePath: string;
   private autoLearn: boolean;
@@ -511,7 +512,7 @@ export class KnowledgeService extends EventEmitter {
   }
 
   private extractTags(task: Task): string[] {
-    const tags = [task.type];
+    const tags = [task.type as string];
     
     // Add tags based on task content
     const content = JSON.stringify(task).toLowerCase();
@@ -701,10 +702,24 @@ export class KnowledgeService extends EventEmitter {
     return 'easy';
   }
 
-  private async updatePatterns(task: Task, agent: Agent): Promise<void> {
-    // This would analyze the task and update learning patterns
-    // For now, it's a placeholder for future ML integration
-    this.logger.debug('Pattern update placeholder for task', task.id);
+  private async updatePatterns(task: Task, agent: Agent, executionData?: {
+    duration: number;
+    success: boolean;
+    error?: string;
+  }): Promise<void> {
+    // Import PatternLearningService when needed to avoid circular deps
+    const { PatternLearningService } = await import('./pattern-learning');
+    
+    if (!this.patternLearningService) {
+      this.patternLearningService = new PatternLearningService(true);
+    }
+
+    if (executionData) {
+      await this.patternLearningService.updatePatterns(task, agent, executionData);
+      this.logger.debug(`Updated learning patterns for task ${task.id} with agent ${agent.config.id}`);
+    } else {
+      this.logger.debug('No execution data provided, skipping pattern update');
+    }
   }
 
   private generateSearchVector(title: string, content: string, tags: string[]): string {

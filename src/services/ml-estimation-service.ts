@@ -440,7 +440,7 @@ export class MLEstimationService extends EventEmitter {
       review: 30 * 60 * 1000 // 30 minutes
     };
 
-    let estimatedDuration = baseDurations[features.type];
+    let estimatedDuration = baseDurations[features.type as keyof typeof baseDurations] || baseDurations.implementation;
     let confidence = 0.5; // Base confidence
 
     // Adjust based on similar tasks

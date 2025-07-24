@@ -82,6 +82,13 @@ export interface WorkflowWait {
   duration?: number;
   condition?: string;
   approvers?: string[];
+  approvalPolicy?: {
+    requiredApprovals?: number;
+    allApproversRequired?: boolean;
+    timeoutMs?: number;
+    autoApproveAfterTimeout?: boolean;
+    autoRejectAfterTimeout?: boolean;
+  };
 }
 
 export interface WorkflowTrigger {

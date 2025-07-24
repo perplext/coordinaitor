@@ -12,10 +12,12 @@ export interface Task {
   estimatedDuration?: number;
   actualDuration?: number;
   createdAt: Date;
+  updatedAt: Date;
   startedAt?: Date;
   completedAt?: Date;
   output?: any;
   error?: string;
+  retryCount?: number;
   metadata?: Record<string, any>;
 }
 

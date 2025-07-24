@@ -42,6 +42,7 @@ import {
 import { format } from 'date-fns';
 import { useAuthStore } from '@/store/authStore';
 import { KnowledgeEntry } from '@/types';
+import { error as logError } from '@/utils/logger';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
@@ -104,8 +105,11 @@ export const KnowledgeCard: React.FC<KnowledgeCardProps> = ({
       await navigator.clipboard.writeText(entry.content);
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
-    } catch (error) {
-      console.error('Failed to copy content', error);
+    } catch (err) {
+      logError('Failed to copy knowledge entry content', {
+        entryId: entry.id,
+        operation: 'copyContent'
+      }, err instanceof Error ? err : new Error(String(err)));
     }
   };
 

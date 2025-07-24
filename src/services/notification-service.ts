@@ -1,5 +1,7 @@
 import axios from 'axios';
 import winston from 'winston';
+import nodemailer from 'nodemailer';
+import { Transporter } from 'nodemailer';
 import { Task, Project } from '../interfaces/task.interface';
 import { Agent } from '../interfaces/agent.interface';
 
@@ -40,6 +42,7 @@ export interface NotificationEvent {
 export class NotificationService {
   private logger: winston.Logger;
   private config: NotificationConfig;
+  private emailTransporter?: Transporter;
 
   constructor(config: NotificationConfig) {
     this.config = config;
@@ -52,6 +55,27 @@ export class NotificationService {
         })
       ]
     });
+
+    // Initialize email transporter if config provided
+    if (this.config.email?.smtp) {
+      this.emailTransporter = nodemailer.createTransport({
+        host: this.config.email.smtp.host,
+        port: this.config.email.smtp.port,
+        secure: this.config.email.smtp.secure,
+        auth: {
+          user: this.config.email.smtp.auth.user,
+          pass: this.config.email.smtp.auth.pass
+        }
+      });
+
+      // Verify email configuration
+      this.emailTransporter.verify().then(() => {
+        this.logger.info('Email notification service configured successfully');
+      }).catch((error) => {
+        this.logger.error('Email configuration error:', error);
+        this.emailTransporter = undefined;
+      });
+    }
   }
 
   public async notify(event: NotificationEvent): Promise<void> {
@@ -133,9 +157,92 @@ export class NotificationService {
   }
 
   private async sendEmailNotification(event: NotificationEvent): Promise<void> {
-    // Email implementation would go here
-    // For now, just log
-    this.logger.info('Email notifications not yet implemented');
+    if (!this.emailTransporter || !this.config.email?.defaultRecipients) {
+      this.logger.warn('Email notification skipped: No transporter or recipients configured');
+      return;
+    }
+
+    try {
+      const subject = this.getEmailSubject(event);
+      const html = this.getEmailHtml(event);
+      const recipients = this.config.email.defaultRecipients.join(', ');
+
+      await this.emailTransporter.sendMail({
+        from: this.config.email.from || 'Multi-Agent Orchestrator <noreply@orchestrator.com>',
+        to: recipients,
+        subject: subject,
+        html: html,
+        text: this.getEmailText(event) // Plain text fallback
+      });
+
+      this.logger.info(`Email notification sent to ${recipients}`);
+    } catch (error) {
+      this.logger.error('Failed to send email notification:', error);
+      throw error;
+    }
+  }
+
+  private getEmailSubject(event: NotificationEvent): string {
+    const levelEmoji = {
+      success: '✅',
+      warning: '⚠️',
+      error: '❌',
+      info: 'ℹ️'
+    };
+
+    return `${levelEmoji[event.level]} ${event.type.toUpperCase()}: ${event.title}`;
+  }
+
+  private getEmailHtml(event: NotificationEvent): string {
+    const levelColor = {
+      success: '#28a745',
+      warning: '#ffc107',
+      error: '#dc3545',
+      info: '#17a2b8'
+    };
+
+    return `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: ${levelColor[event.level]}; color: white; padding: 20px; border-radius: 5px 5px 0 0;">
+          <h2 style="margin: 0;">${event.title}</h2>
+        </div>
+        <div style="background-color: #f8f9fa; padding: 20px; border: 1px solid #dee2e6; border-top: none;">
+          <p style="color: #495057; margin: 10px 0;">${event.message}</p>
+          ${event.details ? `
+            <div style="background-color: white; padding: 15px; border-radius: 5px; margin-top: 15px;">
+              <h3 style="margin-top: 0; color: #495057;">Details:</h3>
+              <pre style="white-space: pre-wrap; color: #212529;">${JSON.stringify(event.details, null, 2)}</pre>
+            </div>
+          ` : ''}
+          ${event.data ? `
+            <div style="background-color: white; padding: 15px; border-radius: 5px; margin-top: 15px;">
+              <h3 style="margin-top: 0; color: #495057;">Additional Data:</h3>
+              <pre style="white-space: pre-wrap; color: #212529;">${JSON.stringify(event.data, null, 2)}</pre>
+            </div>
+          ` : ''}
+          <hr style="margin: 20px 0; border: none; border-top: 1px solid #dee2e6;">
+          <p style="color: #6c757d; font-size: 12px; margin: 0;">
+            Sent at ${new Date(event.timestamp).toLocaleString()} by Multi-Agent Orchestrator
+          </p>
+        </div>
+      </div>
+    `;
+  }
+
+  private getEmailText(event: NotificationEvent): string {
+    let text = `${event.level.toUpperCase()}: ${event.title}\n\n${event.message}\n`;
+    
+    if (event.details) {
+      text += `\nDetails:\n${JSON.stringify(event.details, null, 2)}\n`;
+    }
+    
+    if (event.data) {
+      text += `\nAdditional Data:\n${JSON.stringify(event.data, null, 2)}\n`;
+    }
+    
+    text += `\n---\nSent at ${new Date(event.timestamp).toLocaleString()}`;
+    
+    return text;
   }
 
   private getSlackColor(level: NotificationEvent['level']): string {
@@ -320,6 +427,44 @@ export class NotificationService {
       message: `Workflow "${workflow.name}" has failed: ${error}`,
       level: 'error',
       data: { workflow, execution, error },
+      timestamp: new Date()
+    });
+  }
+
+  public async notifyApprovalRequired(params: {
+    approvalRequest: any;
+    approverId: string;
+  }): Promise<void> {
+    const { approvalRequest, approverId } = params;
+    await this.notify({
+      type: 'approval:required',
+      title: 'Approval Required',
+      message: `Your approval is required for "${approvalRequest.stepName}" in workflow "${approvalRequest.workflowName}"`,
+      level: 'warning',
+      data: { approvalRequest, approverId },
+      timestamp: new Date(),
+      metadata: {
+        approvalId: approvalRequest.id,
+        workflowExecutionId: approvalRequest.workflowExecutionId,
+        description: approvalRequest.description
+      }
+    });
+  }
+
+  public async notifyApprovalResolved(params: {
+    approvalRequest: any;
+    resolution: 'approved' | 'rejected' | 'expired';
+  }): Promise<void> {
+    const { approvalRequest, resolution } = params;
+    const level = resolution === 'approved' ? 'success' : 'warning';
+    const title = `Approval ${resolution.charAt(0).toUpperCase() + resolution.slice(1)}`;
+    
+    await this.notify({
+      type: 'approval:resolved',
+      title,
+      message: `Approval for "${approvalRequest.stepName}" has been ${resolution}`,
+      level,
+      data: { approvalRequest, resolution },
       timestamp: new Date()
     });
   }

@@ -21,11 +21,16 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   fallback = '/login',
 }) => {
   const location = useLocation();
-  const { isAuthenticated, user, hasPermission, hasRole, hasAnyPermission, hasAllPermissions } = useAuthStore();
+  const { isAuthenticated, user, hasPermission, hasRole, hasAnyPermission, hasAllPermissions, needsOnboarding } = useAuthStore();
 
   // If not authenticated, redirect to login
   if (!isAuthenticated || !user) {
     return <Navigate to={fallback} state={{ from: location }} replace />;
+  }
+
+  // Check if user needs onboarding (skip if already on onboarding page)
+  if (needsOnboarding() && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
   }
 
   // Check role if specified

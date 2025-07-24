@@ -87,7 +87,7 @@ export class AnalyticsService extends EventEmitter {
   private metrics: MetricSnapshot[] = [];
   private taskHistory: Task[] = [];
   private logger: winston.Logger;
-  private metricsInterval: NodeJS.Timer | null = null;
+  private metricsInterval: NodeJS.Timeout | null = null;
 
   constructor() {
     super();

@@ -127,7 +127,7 @@ export class AgentRegistry {
 
       if (task.metadata?.languages) {
         const matchingLanguages = capability.languages?.filter(lang => 
-          task.metadata.languages.includes(lang)
+          task.metadata?.languages?.includes(lang)
         ) || [];
         score.score += matchingLanguages.length * 10;
         if (matchingLanguages.length > 0) {
@@ -137,7 +137,7 @@ export class AgentRegistry {
 
       if (task.metadata?.frameworks) {
         const matchingFrameworks = capability.frameworks?.filter(fw => 
-          task.metadata.frameworks.includes(fw)
+          task.metadata?.frameworks?.includes(fw)
         ) || [];
         score.score += matchingFrameworks.length * 10;
         if (matchingFrameworks.length > 0) {

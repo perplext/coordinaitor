@@ -177,3 +177,208 @@ agents:
           - model-evaluation
     cost:
       perToken: 0.00001
+
+  - id: amazon-q-001
+    name: Amazon Q Business Agent
+    type: api
+    provider: aws
+    version: "1.0"
+    endpoint: https://qbusiness.us-east-1.amazonaws.com
+    maxConcurrentTasks: 8
+    timeout: 240000
+    capabilities:
+      - name: knowledge-base-search
+        description: Search enterprise knowledge bases
+        category: general
+        complexity: moderate
+        specialties:
+          - document-retrieval
+          - enterprise-search
+          - context-aware-responses
+      - name: business-intelligence
+        description: Business data analysis and insights
+        category: analytics
+        complexity: complex
+        specialties:
+          - data-analysis
+          - report-generation
+          - trend-identification
+      - name: conversational-ai
+        description: Natural language conversation
+        category: general
+        complexity: simple
+    cost:
+      perRequest: 0.02
+      monthly: 50
+
+  - id: github-copilot-001
+    name: GitHub Copilot Agent
+    type: api
+    provider: github
+    version: "1.0"
+    endpoint: https://api.github.com/copilot
+    maxConcurrentTasks: 12
+    timeout: 180000
+    capabilities:
+      - name: code-completion
+        description: Intelligent code completion and suggestions
+        category: development
+        complexity: moderate
+        languages:
+          - javascript
+          - typescript
+          - python
+          - java
+          - go
+          - rust
+          - csharp
+          - php
+          - ruby
+        specialties:
+          - autocomplete
+          - function-generation
+          - boilerplate-code
+      - name: code-review
+        description: Automated code review and feedback
+        category: testing
+        complexity: moderate
+        specialties:
+          - bug-detection
+          - best-practices
+          - performance-review
+      - name: test-generation
+        description: Generate unit and integration tests
+        category: testing
+        complexity: moderate
+    cost:
+      monthly: 10
+      perRequest: 0.001
+
+  - id: cursor-001
+    name: Cursor AI Agent
+    type: api
+    provider: cursor
+    version: "1.0"
+    endpoint: https://api.cursor.sh
+    maxConcurrentTasks: 8
+    timeout: 300000
+    capabilities:
+      - name: codebase-analysis
+        description: Analyze entire codebases with context
+        category: development
+        complexity: complex
+        specialties:
+          - codebase-understanding
+          - cross-file-refactoring
+          - architectural-analysis
+      - name: contextual-coding
+        description: Context-aware code generation
+        category: development
+        complexity: complex
+        languages:
+          - javascript
+          - typescript
+          - python
+          - java
+          - go
+          - rust
+          - swift
+          - kotlin
+        specialties:
+          - file-context-awareness
+          - multi-file-editing
+          - large-scale-refactoring
+      - name: ai-pair-programming
+        description: Interactive AI pair programming
+        category: development
+        complexity: moderate
+    cost:
+      monthly: 20
+      perRequest: 0.005
+
+  - id: perplexity-001
+    name: Perplexity AI Agent
+    type: api
+    provider: perplexity
+    version: "1.0"
+    endpoint: https://api.perplexity.ai
+    maxConcurrentTasks: 10
+    timeout: 180000
+    capabilities:
+      - name: web-search
+        description: Real-time web search and information retrieval
+        category: general
+        complexity: moderate
+        specialties:
+          - current-events
+          - fact-checking
+          - research
+          - citation-generation
+      - name: research-synthesis
+        description: Comprehensive research and analysis
+        category: analytics
+        complexity: complex
+        specialties:
+          - multi-source-analysis
+          - trend-identification
+          - comparative-analysis
+      - name: real-time-information
+        description: Access to current information and news
+        category: general
+        complexity: simple
+    cost:
+      monthly: 20
+      perRequest: 0.002
+
+  - id: codewhisperer-001
+    name: Amazon CodeWhisperer Agent
+    type: api
+    provider: aws
+    version: "1.0"
+    endpoint: https://codewhisperer.us-east-1.amazonaws.com
+    maxConcurrentTasks: 15
+    timeout: 120000
+    capabilities:
+      - name: code-suggestions
+        description: AI-powered code suggestions and completions
+        category: development
+        complexity: moderate
+        languages:
+          - javascript
+          - typescript
+          - python
+          - java
+          - csharp
+          - cpp
+          - go
+          - rust
+          - kotlin
+          - scala
+          - swift
+          - php
+          - ruby
+          - shell
+          - sql
+        specialties:
+          - inline-suggestions
+          - function-completion
+          - import-suggestions
+      - name: security-scanning
+        description: Automated security vulnerability detection
+        category: security
+        complexity: complex
+        specialties:
+          - vulnerability-detection
+          - security-best-practices
+          - owasp-compliance
+      - name: code-review
+        description: Automated code quality review
+        category: testing
+        complexity: moderate
+        specialties:
+          - quality-assessment
+          - performance-optimization
+          - maintainability-analysis
+    cost:
+      monthly: 19
+      perRequest: 0.001

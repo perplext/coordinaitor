@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Box } from '@mui/material';
 import { Layout } from '@/components/Layout';
@@ -10,10 +10,13 @@ import { ProjectDetail } from '@/pages/ProjectDetail';
 import { TaskDetail } from '@/pages/TaskDetail';
 import { Analytics } from '@/pages/Analytics';
 import { Knowledge } from '@/pages/Knowledge';
+import { Approvals } from '@/pages/Approvals';
+import { AgentCapacity } from '@/components/AgentCapacity';
 import { LoginForm } from '@/components/LoginForm';
 import { RegisterForm } from '@/components/RegisterForm';
 import { UserProfile } from '@/components/UserProfile';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
 import { socketService } from '@/services/socket';
 import { useStore } from '@/store/useStore';
 import { useAuthStore } from '@/store/authStore';
@@ -57,6 +60,16 @@ function App() {
         {/* Public routes */}
         <Route path="/login" element={<LoginForm />} />
         <Route path="/register" element={<RegisterForm />} />
+        
+        {/* Onboarding route */}
+        <Route
+          path="/onboarding"
+          element={
+            <ProtectedRoute>
+              <OnboardingFlow />
+            </ProtectedRoute>
+          }
+        />
         
         {/* Protected routes */}
         <Route
@@ -120,6 +133,22 @@ function App() {
                     element={
                       <ProtectedRoute permission="knowledge:read">
                         <Knowledge />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/approvals" 
+                    element={
+                      <ProtectedRoute permission="approvals:read">
+                        <Approvals />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/capacity" 
+                    element={
+                      <ProtectedRoute permission="capacity:read">
+                        <AgentCapacity />
                       </ProtectedRoute>
                     } 
                   />

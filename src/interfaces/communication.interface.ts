@@ -21,7 +21,7 @@ export interface MCPTool {
 export interface MCPServer {
   id: string;
   name: string;
-  tools: MCPTool[];
+  tools: Map<string, MCPTool>;
   start(): Promise<void>;
   stop(): Promise<void>;
   registerTool(tool: MCPTool): void;
@@ -53,4 +53,5 @@ export interface CommunicationHub {
   publish(event: string, data: any): void;
   subscribe(event: string, subscriber: string, handler: (event: any) => void): EventSubscription;
   unsubscribe(subscriptionId: string): void;
+  on(event: string, handler: (data: any) => void): void;
 }

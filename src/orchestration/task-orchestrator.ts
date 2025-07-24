@@ -14,6 +14,9 @@ import { NotificationService, NotificationConfig } from '../services/notificatio
 import { CollaborationManager, CollaborationStrategy } from '../collaboration/collaboration-manager';
 import { MLEstimationService, TaskEstimation } from '../services/ml-estimation-service';
 import { SecurityScannerService, SecurityScanResult, ScannerConfig } from '../services/security-scanner-service';
+import { PRDDecompositionService, DecompositionResult } from '../services/prd-decomposition-service';
+import { PatternLearningService } from '../services/pattern-learning';
+import { AgentCapacityManager } from '../services/agent-capacity-manager';
 import winston from 'winston';
 
 export class TaskOrchestrator extends EventEmitter {
@@ -27,6 +30,9 @@ export class TaskOrchestrator extends EventEmitter {
   private collaborationManager: CollaborationManager;
   private mlEstimationService: MLEstimationService;
   private securityScanner: SecurityScannerService;
+  private prdDecompositionService: PRDDecompositionService;
+  private agentCapacityManager: AgentCapacityManager;
+  private taskProcessorInterval: NodeJS.Timeout | null = null;
 
   constructor(
     private agentRegistry: AgentRegistry,
@@ -67,7 +73,68 @@ export class TaskOrchestrator extends EventEmitter {
     this.securityScanner = new SecurityScannerService(securityConfig);
     this.setupSecurityHandlers();
 
+    const patternLearning = new PatternLearningService();
+    this.prdDecompositionService = new PRDDecompositionService(agentRegistry, patternLearning);
+
+    this.agentCapacityManager = new AgentCapacityManager();
+    this.setupCapacityHandlers();
+    
+    // Register all agents with capacity manager
+    for (const agent of agentRegistry.getAllAgents()) {
+      this.agentCapacityManager.registerAgent(agent.config);
+    }
+
     this.startTaskProcessor();
+  }
+
+  private setupCapacityHandlers(): void {
+    // Handle task assignment events
+    this.agentCapacityManager.on('task:assigned', ({ agentId, taskId, currentLoad, maxCapacity }) => {
+      this.logger.info(`Task ${taskId} assigned to agent ${agentId} (${currentLoad}/${maxCapacity})`);
+    });
+
+    // Handle task queueing
+    this.agentCapacityManager.on('task:queued', ({ agentId, taskId, queueSize }) => {
+      this.logger.info(`Task ${taskId} queued for agent ${agentId} (queue size: ${queueSize})`);
+      this.emit('task:queued', { agentId, taskId, queueSize });
+    });
+
+    // Handle task dequeuing
+    this.agentCapacityManager.on('task:dequeued', ({ agentId, taskId }) => {
+      // Re-attempt to execute the dequeued task
+      this.executeTask(taskId).catch(error => {
+        this.logger.error(`Failed to execute dequeued task ${taskId}:`, error);
+      });
+    });
+
+    // Handle orphaned tasks (when agent is unregistered)
+    this.agentCapacityManager.on('tasks:orphaned', ({ tasks, agentId }) => {
+      this.logger.warn(`Agent ${agentId} unregistered with ${tasks.length} active tasks`);
+      // Mark tasks as failed and requeue them
+      tasks.forEach(taskId => {
+        const task = this.tasks.get(taskId);
+        if (task) {
+          task.status = 'failed';
+          task.error = 'Agent disconnected';
+          this.taskQueue.push(task);
+        }
+      });
+    });
+
+    // Handle rebalancing events
+    this.agentCapacityManager.on('task:rebalanced', ({ taskId, fromAgent, toAgent }) => {
+      this.logger.info(`Task ${taskId} rebalanced from ${fromAgent} to ${toAgent}`);
+    });
+
+    // Monitor capacity metrics
+    this.agentCapacityManager.on('metrics:updated', (metrics) => {
+      if (metrics.bottleneckAgents.length > 0) {
+        this.emit('capacity:bottleneck', { 
+          agents: metrics.bottleneckAgents,
+          queuedTasks: metrics.queuedTasks 
+        });
+      }
+    });
   }
 
   private setupSecurityHandlers(): void {
@@ -155,6 +222,7 @@ export class TaskOrchestrator extends EventEmitter {
       status: 'pending',
       priority: params.priority || 'medium',
       createdAt: new Date(),
+      updatedAt: new Date(),
       metadata: params.context
     };
 
@@ -209,6 +277,51 @@ export class TaskOrchestrator extends EventEmitter {
       throw new Error('Project not found');
     }
 
+    try {
+      // Use the new PRD decomposition service
+      const decompositionResult = await this.prdDecompositionService.decomposePRD(project);
+      
+      // Store requirements
+      project.requirements = decompositionResult.requirements;
+      
+      // Store milestones
+      project.milestones = decompositionResult.milestones;
+      
+      // Add tasks to orchestrator
+      decompositionResult.tasks.forEach(task => {
+        this.tasks.set(task.id, task);
+      });
+      
+      // Update project
+      project.tasks = decompositionResult.tasks;
+      project.status = 'active';
+      project.updatedAt = new Date();
+      project.metadata = {
+        ...project.metadata,
+        estimatedDuration: decompositionResult.estimatedDuration,
+        riskFactors: decompositionResult.riskFactors,
+        decompositionDate: new Date()
+      };
+      
+      // Emit decomposition event
+      this.emit('project:decomposed', {
+        project,
+        decomposition: decompositionResult
+      });
+      
+      this.logger.info(`Project ${project.name} decomposed into ${decompositionResult.tasks.length} tasks`);
+      
+      return decompositionResult.tasks;
+    } catch (error) {
+      this.logger.error('Failed to decompose project:', error);
+      
+      // Fallback to basic decomposition
+      return this.basicProjectDecomposition(project);
+    }
+  }
+
+  private async basicProjectDecomposition(project: Project): Promise<Task[]> {
+    // Fallback method using the original approach
     const decompositionTask = await this.createTask({
       prompt: `Analyze the following project and create a detailed task breakdown:
 
@@ -232,14 +345,14 @@ For each task, specify:
 - Required skills or technologies`,
       type: 'requirement',
       priority: 'high',
-      context: { projectId }
+      context: { projectId: project.id }
     });
 
-    const result = await this.executeTask(decompositionTask.id);
+    const result = await this.executeTask(decompositionTask.id, false);
     
-    const tasks = this.parseTaskDecomposition(result.result.content, projectId);
+    const tasks = this.parseTaskDecomposition(result.result.content, project.id);
     
-    project.tasks = tasks.map(t => t.id);
+    project.tasks = tasks;
     project.status = 'active';
     project.updatedAt = new Date();
     
@@ -270,7 +383,8 @@ For each task, specify:
             dependencies: [],
             status: 'pending',
             priority: (priorityMatch?.[1] as Task['priority']) || 'medium',
-            createdAt: new Date()
+            createdAt: new Date(),
+            updatedAt: new Date()
           };
           
           tasks.push(task);
@@ -293,14 +407,48 @@ For each task, specify:
       return this.executeTaskWithCollaboration(task);
     }
 
+    // Get eligible agents for the task
     const agentScores = this.agentRegistry.findBestAgentForTask(task);
     if (agentScores.length === 0) {
-      throw new Error('No available agents for this task');
+      throw new Error('No suitable agent found');
     }
 
-    const bestAgent = this.agentRegistry.getAgent(agentScores[0].agentId);
+    // Get eligible agent IDs
+    const eligibleAgentIds = agentScores.map(score => score.agentId);
+    
+    // Use capacity manager to find the best available agent
+    const selectedAgentId = this.agentCapacityManager.getBestAvailableAgent(eligibleAgentIds);
+    
+    if (!selectedAgentId) {
+      // All eligible agents are at capacity - try to assign to queue
+      const firstAgentId = agentScores[0].agentId;
+      const queued = this.agentCapacityManager.assignTask(firstAgentId, taskId);
+      
+      if (!queued) {
+        throw new Error('No agents available and failed to queue task');
+      }
+      
+      // Task has been queued, return a pending response
+      return {
+        taskId,
+        agentId: firstAgentId,
+        success: false,
+        status: 'queued',
+        error: 'Task queued - all agents at capacity',
+        duration: 0
+      };
+    }
+
+    const bestAgent = this.agentRegistry.getAgent(selectedAgentId);
     if (!bestAgent) {
       throw new Error('Agent not found');
+    }
+
+    // Use capacity manager to assign the task
+    const assigned = this.agentCapacityManager.assignTask(selectedAgentId, taskId);
+    if (!assigned) {
+      // This shouldn't happen if getBestAvailableAgent worked correctly
+      throw new Error('Failed to assign task to agent');
     }
 
     task.assignedAgent = bestAgent.config.id;
@@ -371,6 +519,9 @@ For each task, specify:
           }
         }
         
+        // Notify capacity manager of task completion
+        this.agentCapacityManager.completeTask(taskId, response.duration);
+        
         this.emit('task:completed', { task, response });
 
         // Send notification
@@ -386,6 +537,9 @@ For each task, specify:
       } else {
         task.status = 'failed';
         task.error = response.error;
+        
+        // Notify capacity manager of task failure
+        this.agentCapacityManager.failTask(taskId);
         
         this.logger.error(`Task ${taskId} failed: ${response.error}`);
         this.emit('task:failed', { task, error: response.error });
@@ -407,19 +561,40 @@ For each task, specify:
       task.status = 'failed';
       task.error = error instanceof Error ? error.message : 'Unknown error';
       
+      // Notify capacity manager of task failure
+      this.agentCapacityManager.failTask(taskId);
+      
       this.logger.error(`Task ${taskId} execution error:`, error);
       this.emit('task:error', { task, error });
       
-      throw error;
+      // Return a failed response instead of throwing
+      return {
+        taskId,
+        agentId: bestAgent.config.id,
+        success: false,
+        status: 'failed',
+        error: task.error,
+        duration: Date.now() - (task.startedAt?.getTime() || Date.now())
+      };
     } finally {
       this.runningTasks.delete(taskId);
     }
   }
 
   private startTaskProcessor(): void {
-    setInterval(() => {
+    this.taskProcessorInterval = setInterval(() => {
       this.processPendingTasks();
     }, 5000);
+  }
+
+  public stopTaskProcessor(): void {
+    if (this.taskProcessorInterval) {
+      clearInterval(this.taskProcessorInterval);
+      this.taskProcessorInterval = null;
+    }
+    
+    // Also stop the capacity manager
+    this.agentCapacityManager.stop();
   }
 
   private async processPendingTasks(): Promise<void> {
@@ -479,8 +654,119 @@ For each task, specify:
     return Array.from(this.tasks.values()).filter(task => task.projectId === projectId);
   }
 
+  public updateTask(taskId: string, updates: Partial<Task>): Task | undefined {
+    const task = this.tasks.get(taskId);
+    if (!task) {
+      return undefined;
+    }
+    
+    const updatedTask = {
+      ...task,
+      ...updates,
+      id: task.id, // Prevent ID change
+      updatedAt: new Date()
+    };
+    
+    this.tasks.set(taskId, updatedTask);
+    this.emit('task:updated', { task: updatedTask });
+    
+    return updatedTask;
+  }
+
+  public deleteTask(taskId: string): boolean {
+    const task = this.tasks.get(taskId);
+    if (!task) {
+      return false;
+    }
+    
+    this.tasks.delete(taskId);
+    this.emit('task:deleted', { taskId });
+    
+    // Remove task from project
+    if (task.projectId) {
+      const project = this.projects.get(task.projectId);
+      if (project) {
+        project.tasks = project.tasks.filter(t => t.id !== taskId);
+        project.updatedAt = new Date();
+      }
+    }
+    
+    return true;
+  }
+
+  public deleteProject(projectId: string): boolean {
+    const project = this.projects.get(projectId);
+    if (!project) {
+      return false;
+    }
+    
+    this.projects.delete(projectId);
+    this.emit('project:deleted', { projectId });
+    
+    return true;
+  }
+
+  public getAllProjects(): Project[] {
+    return Array.from(this.projects.values());
+  }
+
   public getRunningTasks(): Map<string, { agentId: string, startTime: Date }> {
     return new Map(this.runningTasks);
+  }
+
+  public async getTasks(filters?: {
+    status?: Task['status'];
+    type?: Task['type'];
+    priority?: Task['priority'];
+  }): Promise<Task[]> {
+    let tasks = Array.from(this.tasks.values());
+    
+    if (filters) {
+      if (filters.status) {
+        tasks = tasks.filter(task => task.status === filters.status);
+      }
+      if (filters.type) {
+        tasks = tasks.filter(task => task.type === filters.type);
+      }
+      if (filters.priority) {
+        tasks = tasks.filter(task => task.priority === filters.priority);
+      }
+    }
+    
+    return tasks;
+  }
+
+  private async resolveDependencyChain(taskId: string): Promise<Task[]> {
+    const chain: Task[] = [];
+    const visited = new Set<string>();
+    
+    const resolve = (id: string): void => {
+      if (visited.has(id)) {
+        throw new Error('Circular dependency detected');
+      }
+      
+      visited.add(id);
+      const task = this.tasks.get(id);
+      
+      if (!task) {
+        throw new Error(`Task ${id} not found in dependency chain`);
+      }
+      
+      // Resolve dependencies first
+      if (task.dependencies && task.dependencies.length > 0) {
+        for (const depId of task.dependencies) {
+          resolve(depId);
+        }
+      }
+      
+      // Add task after its dependencies
+      if (!chain.find(t => t.id === id)) {
+        chain.push(task);
+      }
+    };
+    
+    resolve(taskId);
+    return chain;
   }
 
   private requiresCollaboration(task: Task): boolean {
@@ -600,7 +886,7 @@ For each task, specify:
     }
 
     // Hierarchical for complex multi-step tasks
-    if (task.priority === 'critical' || task.requirements?.length > 5) {
+    if (task.priority === 'critical' || (task.requirements && task.requirements.length > 5)) {
       return { type: 'hierarchical', config: {} };
     }
 
@@ -670,7 +956,7 @@ For each task, specify:
 
   private async runSecurityScan(task: Task): Promise<SecurityScanResult[]> {
     // Use project path or current working directory
-    const scanPath = this.gitService?.config.repoPath || process.cwd();
+    const scanPath = this.gitService?.repoPath || process.cwd();
     
     this.logger.info(`Running security scan for task ${task.id} in ${scanPath}`);
     const results = await this.securityScanner.scanTask(task, scanPath);
@@ -696,5 +982,40 @@ For each task, specify:
 
   public getSecurityScanResults(taskId?: string): SecurityScanResult[] {
     return this.securityScanner.getScanResults(taskId);
+  }
+
+  /**
+   * Get capacity metrics for all agents
+   */
+  public getCapacityMetrics() {
+    return this.agentCapacityManager.getCapacityMetrics();
+  }
+
+  /**
+   * Get capacity info for a specific agent
+   */
+  public getAgentCapacity(agentId: string) {
+    return this.agentCapacityManager.getAgentCapacity(agentId);
+  }
+
+  /**
+   * Update an agent's max concurrent tasks
+   */
+  public updateAgentCapacity(agentId: string, maxConcurrentTasks: number) {
+    this.agentCapacityManager.updateAgentCapacity(agentId, maxConcurrentTasks);
+  }
+
+  /**
+   * Get load balancing recommendations
+   */
+  public getLoadBalancingRecommendations() {
+    return this.agentCapacityManager.getLoadBalancingRecommendations();
+  }
+
+  /**
+   * Manually trigger task rebalancing
+   */
+  public async rebalanceTasks() {
+    return this.agentCapacityManager.rebalanceTasks();
   }
 }

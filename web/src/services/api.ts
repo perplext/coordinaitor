@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { Agent, Task, Project, TaskRequest, ProjectRequest } from '@/types';
+import { error as logError, logApiCall } from '../utils/logger';
 
 class ApiService {
   private client: AxiosInstance;
@@ -27,7 +28,12 @@ class ApiService {
     this.client.interceptors.response.use(
       (response) => response,
       (error) => {
-        console.error('API Error:', error);
+        logError('API request failed', {
+          url: error.config?.url,
+          method: error.config?.method,
+          status: error.response?.status,
+          message: error.message
+        }, error);
         
         // Handle 401 errors
         if (error.response?.status === 401) {
@@ -150,7 +156,7 @@ class ApiService {
 }
 
 export const apiService = new ApiService();
-export const api = apiService.axios;
+export const api = apiService.client;
 
 // Make auth store available to API interceptor
 if (typeof window !== 'undefined') {

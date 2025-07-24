@@ -1,0 +1,582 @@
+{
+  "info": {
+    "name": "Multi-Agent Orchestrator API",
+    "description": "Comprehensive API collection for the Multi-Agent Orchestrator platform",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "organization_id",
+      "value": "default",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Get Auth Methods",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/methods/{{organization_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "methods", "{{organization_id}}"]
+            },
+            "description": "Retrieve available authentication methods for an organization"
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('jwt_token', response.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"organizationId\": \"{{organization_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Authenticate with email and password"
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Get current authenticated user information"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Logout and invalidate session"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Agents",
+      "item": [
+        {
+          "name": "List Agents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/agents",
+              "host": ["{{base_url}}"],
+              "path": ["agents"]
+            },
+            "description": "Get list of all registered agents"
+          }
+        },
+        {
+          "name": "Get Agent Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/agents/claude-001/metrics",
+              "host": ["{{base_url}}"],
+              "path": ["agents", "claude-001", "metrics"]
+            },
+            "description": "Get performance metrics for a specific agent"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tasks",
+      "item": [
+        {
+          "name": "Create Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Generate a React component for a user profile card\",\n  \"type\": \"code-generation\",\n  \"priority\": \"high\",\n  \"context\": {\n    \"framework\": \"React\",\n    \"styling\": \"CSS modules\"\n  },\n  \"useCollaboration\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/tasks",
+              "host": ["{{base_url}}"],
+              "path": ["tasks"]
+            },
+            "description": "Create and execute a new task"
+          }
+        },
+        {
+          "name": "List Tasks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tasks?status=completed&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["tasks"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "completed"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get list of tasks with optional filtering"
+          }
+        },
+        {
+          "name": "Get Task",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["tasks", "{{task_id}}"]
+            },
+            "description": "Get details for a specific task"
+          }
+        },
+        {
+          "name": "Update Task",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"priority\": \"urgent\",\n  \"status\": \"in-progress\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/tasks/{{task_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["tasks", "{{task_id}}"]
+            },
+            "description": "Update task properties"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "item": [
+        {
+          "name": "Create Project",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"E-commerce Platform\",\n  \"description\": \"Building a modern e-commerce solution\",\n  \"priority\": \"high\",\n  \"tags\": [\"react\", \"nodejs\", \"postgresql\"],\n  \"deadline\": \"2024-03-01T00:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/projects",
+              "host": ["{{base_url}}"],
+              "path": ["projects"]
+            },
+            "description": "Create a new project"
+          }
+        },
+        {
+          "name": "List Projects",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/projects",
+              "host": ["{{base_url}}"],
+              "path": ["projects"]
+            },
+            "description": "Get list of all projects"
+          }
+        },
+        {
+          "name": "Get Project",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/projects/{{project_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["projects", "{{project_id}}"]
+            },
+            "description": "Get project details"
+          }
+        }
+      ]
+    },
+    {
+      "name": "SSO Configuration",
+      "item": [
+        {
+          "name": "Get SSO Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/sso/settings",
+              "host": ["{{base_url}}"],
+              "path": ["sso", "settings"]
+            },
+            "description": "Get SSO configuration settings"
+          }
+        },
+        {
+          "name": "Update SSO Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": true,\n  \"allowLocalAuth\": true,\n  \"forceSSO\": false,\n  \"sessionTimeout\": 86400000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/sso/settings",
+              "host": ["{{base_url}}"],
+              "path": ["sso", "settings"]
+            },
+            "description": "Update SSO settings"
+          }
+        },
+        {
+          "name": "List SAML Providers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/sso/saml/providers",
+              "host": ["{{base_url}}"],
+              "path": ["sso", "saml", "providers"]
+            },
+            "description": "Get list of SAML providers"
+          }
+        },
+        {
+          "name": "Create SAML Provider",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Okta SAML\",\n  \"entityId\": \"https://dev-123.okta.com\",\n  \"ssoUrl\": \"https://dev-123.okta.com/app/app_name/exk123/sso/saml\",\n  \"metadata\": \"<EntityDescriptor>...</EntityDescriptor>\",\n  \"enabled\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/sso/saml/providers",
+              "host": ["{{base_url}}"],
+              "path": ["sso", "saml", "providers"]
+            },
+            "description": "Create a new SAML provider"
+          }
+        },
+        {
+          "name": "List OAuth2 Providers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/sso/oauth2/providers",
+              "host": ["{{base_url}}"],
+              "path": ["sso", "oauth2", "providers"]
+            },
+            "description": "Get list of OAuth2 providers"
+          }
+        },
+        {
+          "name": "Create OAuth2 Provider",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Google OAuth2\",\n  \"provider\": \"google\",\n  \"clientId\": \"your-client-id.apps.googleusercontent.com\",\n  \"clientSecret\": \"your-client-secret\",\n  \"scopes\": [\"openid\", \"email\", \"profile\"],\n  \"enabled\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/sso/oauth2/providers",
+              "host": ["{{base_url}}"],
+              "path": ["sso", "oauth2", "providers"]
+            },
+            "description": "Create a new OAuth2 provider"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Get Analytics Snapshot",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/snapshot",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "snapshot"]
+            },
+            "description": "Get current system metrics snapshot"
+          }
+        },
+        {
+          "name": "Get Agent Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/agents",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "agents"]
+            },
+            "description": "Get agent performance analytics"
+          }
+        },
+        {
+          "name": "Get Task Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/tasks",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "tasks"]
+            },
+            "description": "Get task execution analytics"
+          }
+        },
+        {
+          "name": "Get Cost Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/costs",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "costs"]
+            },
+            "description": "Get cost analysis and projections"
+          }
+        }
+      ]
+    },
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Check system health status"
+          }
+        },
+        {
+          "name": "Get Capacity Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/capacity/agents",
+              "host": ["{{base_url}}"],
+              "path": ["capacity", "agents"]
+            },
+            "description": "Get agent capacity and load status"
+          }
+        },
+        {
+          "name": "Git Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/git/status",
+              "host": ["{{base_url}}"],
+              "path": ["git", "status"]
+            },
+            "description": "Get git repository status"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Workflows",
+      "item": [
+        {
+          "name": "List Workflows",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/workflows",
+              "host": ["{{base_url}}"],
+              "path": ["workflows"]
+            },
+            "description": "Get list of available workflows"
+          }
+        },
+        {
+          "name": "Execute Workflow",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variables\": {\n    \"projectName\": \"My Project\",\n    \"language\": \"TypeScript\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/workflows/{{workflow_id}}/execute",
+              "host": ["{{base_url}}"],
+              "path": ["workflows", "{{workflow_id}}", "execute"]
+            },
+            "description": "Execute a workflow with variables"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Templates",
+      "item": [
+        {
+          "name": "List Templates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/templates",
+              "host": ["{{base_url}}"],
+              "path": ["templates"]
+            },
+            "description": "Get list of available templates"
+          }
+        },
+        {
+          "name": "Apply Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variables\": {\n    \"componentName\": \"UserCard\",\n    \"props\": [\"name\", \"email\", \"avatar\"]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/templates/{{template_id}}/apply",
+              "host": ["{{base_url}}"],
+              "path": ["templates", "{{template_id}}", "apply"]
+            },
+            "description": "Apply a template with variables"
+          }
+        }
+      ]
+    }
+  ]
+}

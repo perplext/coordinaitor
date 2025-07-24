@@ -20,6 +20,15 @@ interface User {
   }>;
   isActive: boolean;
   lastLogin?: Date;
+  metadata?: {
+    onboarding?: {
+      completedAt?: string;
+      currentStep?: string;
+      completedSteps?: string[];
+    };
+    profileCompleted?: boolean;
+    [key: string]: any;
+  };
 }
 
 interface AuthToken {
@@ -54,6 +63,8 @@ interface AuthState {
   hasRole: (roleId: string) => boolean;
   hasAnyPermission: (permissions: string[]) => boolean;
   hasAllPermissions: (permissions: string[]) => boolean;
+  updateUser: (user: User) => void;
+  needsOnboarding: () => boolean;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -221,6 +232,19 @@ export const useAuthStore = create<AuthState>()(
 
       hasAllPermissions: (permissions: string[]) => {
         return permissions.every(p => get().hasPermission(p));
+      },
+
+      updateUser: (user: User) => {
+        set({ user });
+      },
+
+      needsOnboarding: () => {
+        const user = get().user;
+        if (!user) return false;
+        
+        // Check if user has completed onboarding
+        const onboarding = user.metadata?.onboarding;
+        return !onboarding?.completedAt;
       },
     }),
     {

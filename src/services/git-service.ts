@@ -40,6 +40,10 @@ export class GitService {
     });
   }
 
+  get repoPath(): string {
+    return this.config.repoPath;
+  }
+
   async initialize(): Promise<void> {
     try {
       // Check if repo exists

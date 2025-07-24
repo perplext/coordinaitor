@@ -1,0 +1,140 @@
+{
+  "Multi-Agent Task": {
+    "prefix": "mao-task",
+    "body": [
+      "// TODO: Multi-Agent Orchestrator Task",
+      "// Title: ${1:Task Title}",
+      "// Type: ${2|requirement,design,implementation,test,deployment,review|}",
+      "// Priority: ${3|low,medium,high,critical|}",
+      "// Description: ${4:Task description}",
+      "// Requirements:",
+      "// - ${5:Requirement 1}",
+      "// - ${6:Requirement 2}",
+      "",
+      "${0:// Your code here}"
+    ],
+    "description": "Create a Multi-Agent Orchestrator task comment"
+  },
+  
+  "MAO API Client": {
+    "prefix": "mao-client",
+    "body": [
+      "import axios from 'axios';",
+      "",
+      "class OrchestratorClient {",
+      "  private apiClient = axios.create({",
+      "    baseURL: '${1:http://localhost:3000/api}',",
+      "    headers: {",
+      "      'Content-Type': 'application/json',",
+      "      'Authorization': 'Bearer ${2:your-api-key}'",
+      "    }",
+      "  });",
+      "",
+      "  async createTask(task: {",
+      "    title: string;",
+      "    description: string;",
+      "    type: 'requirement' | 'design' | 'implementation' | 'test' | 'deployment' | 'review';",
+      "    priority: 'low' | 'medium' | 'high' | 'critical';",
+      "  }) {",
+      "    const response = await this.apiClient.post('/tasks', task);",
+      "    return response.data;",
+      "  }",
+      "",
+      "  async executeTask(taskId: string) {",
+      "    const response = await this.apiClient.post(`/tasks/${taskId}/execute`);",
+      "    return response.data;",
+      "  }",
+      "",
+      "  async getTasks() {",
+      "    const response = await this.apiClient.get('/tasks');",
+      "    return response.data.tasks;",
+      "  }",
+      "}",
+      "",
+      "export const orchestrator = new OrchestratorClient();"
+    ],
+    "description": "Create an API client for Multi-Agent Orchestrator"
+  },
+
+  "Knowledge Entry": {
+    "prefix": "mao-knowledge",
+    "body": [
+      "/**",
+      " * Knowledge Entry: ${1:Title}",
+      " * Type: ${2|solution,pattern,snippet,documentation,error,best-practice|}",
+      " * Tags: ${3:tag1, tag2, tag3}",
+      " * Language: ${4:typescript}",
+      " * Difficulty: ${5|easy,medium,hard,expert|}",
+      " * ",
+      " * Description:",
+      " * ${6:Description of this knowledge entry}",
+      " * ",
+      " * Usage:",
+      " * ${7:How to use this code/pattern}",
+      " */",
+      "",
+      "${0:// Your code here}"
+    ],
+    "description": "Create a knowledge entry comment structure"
+  },
+
+  "Agent Interface": {
+    "prefix": "mao-agent",
+    "body": [
+      "interface Agent {",
+      "  id: string;",
+      "  name: string;",
+      "  type: 'cli' | 'api' | 'sdk' | 'custom';",
+      "  provider: string;",
+      "  version: string;",
+      "  capabilities: AgentCapability[];",
+      "  status: {",
+      "    state: 'idle' | 'busy' | 'error' | 'offline';",
+      "    currentTask?: string;",
+      "    lastActivity: Date;",
+      "    totalTasksCompleted: number;",
+      "    successRate: number;",
+      "    averageResponseTime: number;",
+      "  };",
+      "}",
+      "",
+      "interface AgentCapability {",
+      "  name: string;",
+      "  description: string;",
+      "  category: 'planning' | 'design' | 'development' | 'testing' | 'deployment' | 'security' | 'general';",
+      "  complexity: 'simple' | 'moderate' | 'complex';",
+      "  languages?: string[];",
+      "  frameworks?: string[];",
+      "}"
+    ],
+    "description": "Create agent interface definitions"
+  },
+
+  "Task Interface": {
+    "prefix": "mao-task-interface",
+    "body": [
+      "interface Task {",
+      "  id: string;",
+      "  projectId: string;",
+      "  type: 'requirement' | 'design' | 'implementation' | 'test' | 'deployment' | 'review';",
+      "  title: string;",
+      "  description: string;",
+      "  requirements?: string[];",
+      "  dependencies?: string[];",
+      "  assignedAgent?: string;",
+      "  status: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'failed' | 'blocked';",
+      "  priority: 'low' | 'medium' | 'high' | 'critical';",
+      "  estimatedDuration?: number;",
+      "  actualDuration?: number;",
+      "  createdAt: Date;",
+      "  updatedAt: Date;",
+      "  startedAt?: Date;",
+      "  completedAt?: Date;",
+      "  output?: any;",
+      "  error?: string;",
+      "  metadata?: Record<string, any>;",
+      "}"
+    ],
+    "description": "Create task interface definition"
+  }
+}

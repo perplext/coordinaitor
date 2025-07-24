@@ -42,7 +42,7 @@ export function createKnowledgeRoutes(
         });
 
         // Non-admin users can only see public entries or their own
-        if (!authService.hasRole(req.user!.userId, 'admin')) {
+        if (!authService.hasRole(req.user!, 'admin')) {
           query.isPublic = true;
           // Add user's own entries
           const userEntries = await knowledgeService.search({
@@ -130,7 +130,7 @@ export function createKnowledgeRoutes(
         // Check access permissions
         if (!entry.isPublic && 
             entry.createdBy !== req.user!.userId && 
-            !authService.hasRole(req.user!.userId, 'admin')) {
+            !authService.hasRole(req.user!, 'admin')) {
           return res.status(403).json({ error: 'Access denied' });
         }
 
@@ -220,7 +220,7 @@ export function createKnowledgeRoutes(
         const accessible = related.filter(entry => 
           entry.isPublic || 
           entry.createdBy === req.user!.userId ||
-          authService.hasRole(req.user!.userId, 'admin')
+          authService.hasRole(req.user!, 'admin')
         );
 
         res.json({ entries: accessible });

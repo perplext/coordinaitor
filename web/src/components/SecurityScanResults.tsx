@@ -35,6 +35,7 @@ import {
   Shield,
 } from '@mui/icons-material';
 import { api } from '@/services/api';
+import { error as logError } from '@/utils/logger';
 
 interface SecurityFinding {
   id: string;
@@ -99,7 +100,10 @@ export function SecurityScanResults({ taskId, autoScan = true }: SecurityScanRes
       setError(null);
     } catch (err) {
       setError('Failed to fetch security scan results');
-      console.error(err);
+      logError('Failed to fetch security scan results', {
+        taskId,
+        operation: 'fetchSecurityScans'
+      }, err instanceof Error ? err : new Error(String(err)));
     } finally {
       setLoading(false);
     }
@@ -113,7 +117,10 @@ export function SecurityScanResults({ taskId, autoScan = true }: SecurityScanRes
       setError(null);
     } catch (err) {
       setError('Failed to run security scan');
-      console.error(err);
+      logError('Failed to run security scan', {
+        taskId,
+        operation: 'runSecurityScan'
+      }, err instanceof Error ? err : new Error(String(err)));
     } finally {
       setLoading(false);
     }
@@ -133,7 +140,10 @@ export function SecurityScanResults({ taskId, autoScan = true }: SecurityScanRes
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Failed to download report:', err);
+      logError('Failed to download security report', {
+        taskId,
+        operation: 'downloadReport'
+      }, err instanceof Error ? err : new Error(String(err)));
     }
   };
 
