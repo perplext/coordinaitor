@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { TaskOrchestrator } from '../../orchestration/task-orchestrator';
-import { authenticate, authorize } from '../middleware/auth';
+import { authenticate, authorize } from '../../middleware/auth';
 import { AuthRequest } from '../../interfaces/auth.interface';
 import { validateRequest } from '../middleware/validation';
 import { z } from 'zod';

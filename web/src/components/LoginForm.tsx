@@ -92,7 +92,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               Sign In
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Welcome back to Multi-Agent Orchestrator
+              Welcome back to CoordinAItor
             </Typography>
           </Box>
 

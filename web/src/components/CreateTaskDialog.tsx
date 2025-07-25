@@ -142,7 +142,7 @@ export const CreateTaskDialog: React.FC<CreateTaskDialogProps> = ({ open, onClos
                   onChange={(e) => setUseCollaboration(e.target.checked)}
                 />
               }
-              label="Enable Multi-Agent Collaboration"
+              label="Enable CoordinAItor Collaboration"
             />
             {useCollaboration && (
               <Alert severity="info" sx={{ mt: 1 }}>

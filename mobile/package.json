@@ -1,7 +1,7 @@
 {
-  "name": "MultiAgentOrchestratorMobile",
+  "name": "CoordinAItorMobile",
   "version": "1.0.0",
-  "description": "Mobile app for Multi-Agent Orchestrator platform",
+  "description": "Mobile app for CoordinAItor platform",
   "private": true,
   "scripts": {
     "android": "react-native run-android",

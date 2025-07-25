@@ -155,7 +155,7 @@ export const ExploreAgentsStep: React.FC<ExploreAgentsStepProps> = ({ onComplete
 
       <Alert severity="info" sx={{ mb: 3 }}>
         <Typography variant="subtitle2">
-          💡 Pro tip: Different agents excel at different tasks. The orchestrator automatically selects the best agents for each task based on their capabilities and current workload.
+          💡 Pro tip: Different agents excel at different tasks. CoordinAItor automatically selects the best agents for each task based on their capabilities and current workload.
         </Typography>
       </Alert>
 

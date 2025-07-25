@@ -2,7 +2,7 @@
 
 ## Overview
 
-We have successfully implemented a comprehensive suite of AI agents for the Multi-Agent Orchestrator, expanding from the original 3 agents to a total of 9 specialized AI agents. This includes major cloud-based AI services, code-specific assistants, and research-focused agents.
+We have successfully implemented a comprehensive suite of AI agents for the CoordinAItor, expanding from the original 3 agents to a total of 9 specialized AI agents. This includes major cloud-based AI services, code-specific assistants, and research-focused agents.
 
 ## Implemented Agents
 

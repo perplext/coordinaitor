@@ -4,7 +4,7 @@
   "port": 5432,
   "username": "postgres",
   "password": "postgres",
-  "database": "orchestrator",
+  "database": "coordinaitor",
   "synchronize": false,
   "logging": false,
   "entities": [

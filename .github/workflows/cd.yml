@@ -1,0 +1,213 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: staging
+      url: https://staging.orchestrator.example.com
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Deploy to ECS
+        run: |
+          # Update task definition with new image
+          aws ecs update-service \
+            --cluster orchestrator-staging \
+            --service orchestrator-api \
+            --force-new-deployment
+      
+      - name: Wait for deployment
+        run: |
+          aws ecs wait services-stable \
+            --cluster orchestrator-staging \
+            --services orchestrator-api
+      
+      - name: Run smoke tests
+        run: |
+          npm ci
+          npm run test:smoke -- --env=staging
+        env:
+          STAGING_URL: https://staging-api.orchestrator.example.com
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [deploy-staging]
+    environment:
+      name: production
+      url: https://orchestrator.example.com
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Create database backup
+        run: |
+          aws rds create-db-snapshot \
+            --db-instance-identifier orchestrator-prod \
+            --db-snapshot-identifier orchestrator-prod-backup-${{ github.sha }}
+      
+      - name: Deploy to ECS (Blue/Green)
+        run: |
+          # Create new task definition revision
+          TASK_DEFINITION=$(aws ecs describe-task-definition \
+            --task-definition orchestrator-prod \
+            --query 'taskDefinition' \
+            --output json)
+          
+          # Update image in task definition
+          NEW_TASK_DEF=$(echo $TASK_DEFINITION | \
+            jq --arg IMAGE "${{ steps.login-ecr.outputs.registry }}/orchestrator:${{ github.ref_name }}" \
+            '.containerDefinitions[0].image = $IMAGE')
+          
+          # Register new task definition
+          aws ecs register-task-definition \
+            --cli-input-json "$NEW_TASK_DEF"
+          
+          # Update service with new task definition
+          aws ecs update-service \
+            --cluster orchestrator-prod \
+            --service orchestrator-api \
+            --task-definition orchestrator-prod
+      
+      - name: Monitor deployment
+        run: |
+          # Wait for deployment to complete
+          aws ecs wait services-stable \
+            --cluster orchestrator-prod \
+            --services orchestrator-api
+          
+          # Check deployment health
+          npm ci
+          npm run test:health -- --env=production
+        env:
+          PROD_URL: https://api.orchestrator.example.com
+      
+      - name: Create release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          body: |
+            ## Changes in this Release
+            
+            ### Features
+            - Feature 1
+            - Feature 2
+            
+            ### Bug Fixes
+            - Fix 1
+            - Fix 2
+            
+            ### Breaking Changes
+            - None
+            
+            Full Changelog: https://github.com/${{ github.repository }}/compare/previous-tag...${{ github.ref_name }}
+          draft: false
+          prerelease: false
+      
+      - name: Notify deployment
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: |
+            Production deployment ${{ job.status }}
+            Version: ${{ github.ref_name }}
+            Deployed by: ${{ github.actor }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        if: always()
+
+  rollback:
+    name: Rollback Production
+    runs-on: ubuntu-latest
+    if: failure() && needs.deploy-production.result == 'failure'
+    needs: [deploy-production]
+    environment:
+      name: production-rollback
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      
+      - name: Rollback deployment
+        run: |
+          # Get previous task definition
+          PREVIOUS_TASK_DEF=$(aws ecs describe-service \
+            --cluster orchestrator-prod \
+            --service orchestrator-api \
+            --query 'service.deployments[1].taskDefinition' \
+            --output text)
+          
+          # Update service to previous version
+          aws ecs update-service \
+            --cluster orchestrator-prod \
+            --service orchestrator-api \
+            --task-definition $PREVIOUS_TASK_DEF \
+            --force-new-deployment
+          
+          # Wait for rollback to complete
+          aws ecs wait services-stable \
+            --cluster orchestrator-prod \
+            --services orchestrator-api
+      
+      - name: Notify rollback
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              text: "⚠️ Production deployment rolled back",
+              attachments: [{
+                color: 'warning',
+                fields: [{
+                  title: 'Version',
+                  value: '${{ github.ref_name }}',
+                  short: true
+                }, {
+                  title: 'Rolled back by',
+                  value: 'Automated rollback',
+                  short: true
+                }]
+              }]
+            }
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}

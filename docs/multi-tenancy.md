@@ -1,6 +1,6 @@
 # Multi-Tenancy Support
 
-The Multi-Agent Orchestrator supports multi-tenancy, allowing multiple organizations to use the same instance while maintaining complete data isolation and security.
+The CoordinAItor supports multi-tenancy, allowing multiple organizations to use the same instance while maintaining complete data isolation and security.
 
 ## Overview
 

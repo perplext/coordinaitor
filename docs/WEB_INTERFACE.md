@@ -1,8 +1,8 @@
-# Multi-Agent Orchestrator Web Interface
+# CoordinAItor Web Interface
 
 ## Overview
 
-The Multi-Agent Orchestrator includes a full-featured web interface built with React and TypeScript. It provides real-time monitoring and control of all agents, tasks, and projects through an intuitive dashboard.
+The CoordinAItor includes a full-featured web interface built with React and TypeScript. It provides real-time monitoring and control of all agents, tasks, and projects through an intuitive dashboard.
 
 ## Features
 

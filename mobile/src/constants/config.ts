@@ -6,24 +6,24 @@ export const API_BASE_URL = __DEV__
       ios: 'http://localhost:3000/api',
       android: 'http://10.0.2.2:3000/api',
     })
-  : 'https://api.multi-agent-orchestrator.com/api';
+  : 'https://api.coordinaitor.com/api';
 
 export const WS_BASE_URL = __DEV__
   ? Platform.select({
       ios: 'ws://localhost:3000',
       android: 'ws://10.0.2.2:3000',
     })
-  : 'wss://api.multi-agent-orchestrator.com';
+  : 'wss://api.coordinaitor.com';
 
 // App Configuration
 export const APP_CONFIG = {
-  appName: 'Multi-Agent Orchestrator',
+  appName: 'CoordinAItor',
   version: '1.0.0',
   buildNumber: '1',
-  bundleId: 'com.multiagent.orchestrator',
-  supportEmail: 'support@multi-agent-orchestrator.com',
-  privacyPolicyUrl: 'https://multi-agent-orchestrator.com/privacy',
-  termsOfServiceUrl: 'https://multi-agent-orchestrator.com/terms',
+  bundleId: 'com.coordinaitor',
+  supportEmail: 'support@coordinaitor.com',
+  privacyPolicyUrl: 'https://coordinaitor.com/privacy',
+  termsOfServiceUrl: 'https://coordinaitor.com/terms',
 };
 
 // Feature Flags

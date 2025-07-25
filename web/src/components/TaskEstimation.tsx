@@ -178,7 +178,7 @@ export function TaskEstimation({ estimation, showDetails = true }: TaskEstimatio
         {estimation.recommendedStrategy === 'collaboration' && (
           <Alert severity="info" sx={{ mt: 2 }}>
             <Typography variant="body2">
-              <strong>Recommendation:</strong> This task would benefit from multi-agent collaboration
+              <strong>Recommendation:</strong> This task would benefit from CoordinAItor collaboration
               based on its complexity and requirements.
             </Typography>
           </Alert>

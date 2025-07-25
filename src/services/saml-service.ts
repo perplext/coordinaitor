@@ -111,7 +111,7 @@ export class SAMLService extends EventEmitter {
   private async createDefaultConfiguration(): Promise<void> {
     const defaultConfig: SAMLConfig = {
       organizationId: 'default',
-      entityId: process.env.SAML_ENTITY_ID || 'urn:multi-agent-orchestrator',
+      entityId: process.env.SAML_ENTITY_ID || 'urn:coordinaitor',
       assertionConsumerServiceUrl: process.env.SAML_ACS_URL || 'http://localhost:3000/auth/saml/acs',
       singleLogoutServiceUrl: process.env.SAML_SLO_URL || 'http://localhost:3000/auth/saml/slo',
       nameIdFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
@@ -565,7 +565,7 @@ export class SAMLService extends EventEmitter {
   private generateSelfSignedCert(privateKey: string, publicKey: string): string {
     // This is a simplified implementation
     // In production, you might want to use a more robust certificate generation
-    const subject = '/C=US/ST=State/L=City/O=Organization/CN=multi-agent-orchestrator';
+    const subject = '/C=US/ST=State/L=City/O=Organization/CN=coordinaitor';
     
     // For now, return the public key as a basic certificate
     // In a real implementation, you'd generate a proper X.509 certificate

@@ -36,8 +36,8 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onComplete }) => {
     },
     {
       icon: <Groups color="primary" />,
-      title: 'Multi-Agent Collaboration',
-      description: 'Orchestrate multiple AI agents working together on complex tasks',
+      title: 'CoordinAItor Collaboration',
+      description: 'Coordinate multiple AI agents working together on complex tasks',
     },
     {
       icon: <Speed color="primary" />,
@@ -69,7 +69,7 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onComplete }) => {
         transition={{ duration: 0.5 }}
       >
         <Typography variant="h3" gutterBottom>
-          Welcome to Multi-Agent Orchestrator! 🚀
+          Welcome to CoordinAItor! 🚀
         </Typography>
         <Typography variant="h6" color="text.secondary" paragraph>
           The ultimate platform for orchestrating AI coding agents to supercharge your development workflow.

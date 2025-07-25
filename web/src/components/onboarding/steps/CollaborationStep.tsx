@@ -194,7 +194,7 @@ export const CollaborationStep: React.FC<CollaborationStepProps> = ({ onComplete
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
-        Multi-Agent Collaboration
+        CoordinAItor Collaboration
       </Typography>
       <Typography variant="body1" color="text.secondary" paragraph>
         See how multiple AI agents work together to tackle complex tasks. Each agent brings unique strengths to deliver better results faster.

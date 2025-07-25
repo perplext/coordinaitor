@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: multi-agent-orchestrator
+  name: coordinaitor
   labels:
-    app: orchestrator
+    app: coordinaitor
     environment: production

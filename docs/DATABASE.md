@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Multi-Agent Orchestrator uses PostgreSQL as its primary database with TypeORM as the ORM layer. This guide covers database setup, migrations, and management.
+The CoordinAItor uses PostgreSQL as its primary database with TypeORM as the ORM layer. This guide covers database setup, migrations, and management.
 
 ## Prerequisites
 

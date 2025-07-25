@@ -1,7 +1,7 @@
 {
-  "name": "multi-agent-orchestrator",
+  "name": "coordinaitor",
   "version": "0.1.0",
-  "description": "Ultimate multi-agent dedicated environment system for orchestrating AI coding agents",
+  "description": "Ultimate AI coordination system for orchestrating coding agents",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -16,6 +16,10 @@
     "test:integration": "jest tests/integration",
     "lint": "eslint src/**/*.ts",
     "typecheck": "tsc --noEmit",
+    "type-check": "tsc --noEmit",
+    "test:smoke": "jest tests/smoke",
+    "test:health": "jest tests/health",
+    "test:e2e": "cd web && npm run test:e2e",
     "docker:build": "docker-compose build",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",

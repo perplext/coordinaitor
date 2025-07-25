@@ -132,7 +132,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
               Create Account
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Join Multi-Agent Orchestrator to start automating your development
+              Join CoordinAItor to start automating your development
             </Typography>
           </Box>
 

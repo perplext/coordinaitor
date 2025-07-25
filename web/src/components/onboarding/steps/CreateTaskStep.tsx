@@ -231,7 +231,7 @@ export const CreateTaskStep: React.FC<CreateTaskStepProps> = ({ onComplete, meta
                   </ListItemIcon>
                   <ListItemText
                     primary="AI agents will start working on your task"
-                    secondary="The orchestrator assigns the best agents based on task requirements"
+                    secondary="CoordinAItor assigns the best agents based on task requirements"
                   />
                 </ListItem>
                 <ListItem>

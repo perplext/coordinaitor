@@ -2,7 +2,7 @@
 
 ## Overview
 
-We have successfully implemented a comprehensive PostgreSQL database layer for the Multi-Agent Orchestrator, replacing the previous in-memory storage with a persistent, scalable solution.
+We have successfully implemented a comprehensive PostgreSQL database layer for the CoordinAItor, replacing the previous in-memory storage with a persistent, scalable solution.
 
 ## What Was Implemented
 
@@ -197,4 +197,4 @@ docker-compose up -d
 5. **Maintainability**: Clean repository pattern and migrations
 6. **Security**: Built-in audit logging and access control
 
-This database implementation provides a solid foundation for the Multi-Agent Orchestrator to scale from a development tool to an enterprise-ready platform.
+This database implementation provides a solid foundation for the CoordinAItor to scale from a development tool to an enterprise-ready platform.

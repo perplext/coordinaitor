@@ -43,6 +43,7 @@ export interface AgentRequest {
   context?: any;
   timeout?: number;
   priority?: 'low' | 'medium' | 'high' | 'critical';
+  metadata?: Record<string, any>;
 }
 
 export interface AgentResponse {

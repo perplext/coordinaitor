@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "Multi-Agent Orchestrator API",
-    "description": "Comprehensive API collection for the Multi-Agent Orchestrator platform",
+    "name": "CoordinAItor API",
+    "description": "Comprehensive API collection for the CoordinAItor platform",
     "version": "1.0.0",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },

@@ -105,7 +105,7 @@ case "$MODE" in
         
         echo ""
         echo "Deployment initiated. Check status with:"
-        echo "kubectl get pods -n multi-agent-orchestrator"
+        echo "kubectl get pods -n coordinaitor"
         ;;
         
     *)

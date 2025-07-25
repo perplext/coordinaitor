@@ -2,7 +2,7 @@
 
 ## Overview
 
-We have successfully implemented a comprehensive guided onboarding flow for new users of the Multi-Agent Orchestrator platform. This feature helps users get started quickly and understand the platform's capabilities through an interactive, step-by-step process.
+We have successfully implemented a comprehensive guided onboarding flow for new users of the CoordinAItor platform. This feature helps users get started quickly and understand the platform's capabilities through an interactive, step-by-step process.
 
 ## Features Implemented
 

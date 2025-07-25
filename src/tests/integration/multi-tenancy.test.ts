@@ -499,6 +499,7 @@ describe('Multi-Tenancy Integration Tests', () => {
         displayName: 'Temporary Organization',
         subdomain: 'temporg',
         tier: 'free',
+        createdBy: 'test-admin',
         contactEmail: 'temp@example.com',
         billingEmail: 'temp@example.com',
         industry: 'test',
@@ -517,10 +518,10 @@ describe('Multi-Tenancy Integration Tests', () => {
       });
       
       // Delete organization
-      await organizationService.deleteOrganization(tempOrg.id, 'test-admin', 'Testing cleanup');
+      await organizationService.deleteOrganization(tempOrg.id);
       
       // Verify related data is cleaned up (should be handled by cascade delete)
-      const invitationCheck = await db.executeQuery(
+      const invitationCheck = await db.query(
         'SELECT id FROM user_invitations WHERE organization_id = $1',
         [tempOrg.id]
       );

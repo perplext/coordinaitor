@@ -1,17 +1,17 @@
-# Multi-Agent Orchestrator API Documentation
+# CoordinAItor API Documentation
 
-Welcome to the comprehensive API documentation for the Multi-Agent Orchestrator platform. This documentation provides detailed information about all available endpoints, authentication methods, and usage examples.
+Welcome to the comprehensive API documentation for the CoordinAItor platform. This documentation provides detailed information about all available endpoints, authentication methods, and usage examples.
 
 ## 🚀 Quick Start
 
 ### Base URL
 - **Development**: `http://localhost:3000/api`
-- **Production**: `https://api.multi-agent-orchestrator.com`
+- **Production**: `https://api.coordinaitor.com`
 
 ### Interactive Documentation
 Visit our interactive Swagger UI documentation:
 - **Local**: [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
-- **Production**: [https://api.multi-agent-orchestrator.com/api/docs](https://api.multi-agent-orchestrator.com/api/docs)
+- **Production**: [https://api.coordinaitor.com/api/docs](https://api.coordinaitor.com/api/docs)
 
 ### API Specification
 Download the OpenAPI 3.0 specification:
@@ -24,20 +24,20 @@ The API supports multiple authentication methods:
 ### 1. JWT Bearer Token
 ```bash
 curl -H "Authorization: Bearer your-jwt-token" \
-  https://api.multi-agent-orchestrator.com/api/agents
+  https://api.coordinaitor.com/api/agents
 ```
 
 ### 2. API Key
 ```bash
 curl -H "X-API-Key: your-api-key" \
-  https://api.multi-agent-orchestrator.com/api/agents
+  https://api.coordinaitor.com/api/agents
 ```
 
 ### 3. Session Cookie
 Session-based authentication for web applications:
 ```bash
 curl -b "sessionId=your-session-id" \
-  https://api.multi-agent-orchestrator.com/api/agents
+  https://api.coordinaitor.com/api/agents
 ```
 
 ### 4. SSO Authentication
@@ -153,13 +153,13 @@ curl -X POST \
       "styling": "CSS modules"
     }
   }' \
-  https://api.multi-agent-orchestrator.com/api/tasks
+  https://api.coordinaitor.com/api/tasks
 ```
 
 ### Listing Agents
 ```bash
 curl -H "Authorization: Bearer your-token" \
-  https://api.multi-agent-orchestrator.com/api/agents
+  https://api.coordinaitor.com/api/agents
 ```
 
 ### Creating a Project
@@ -173,7 +173,7 @@ curl -X POST \
     "priority": "high",
     "tags": ["react", "nodejs", "postgresql"]
   }' \
-  https://api.multi-agent-orchestrator.com/api/projects
+  https://api.coordinaitor.com/api/projects
 ```
 
 ## 🔢 Response Formats
@@ -236,17 +236,17 @@ CORS is enabled for web applications:
 
 ## 📞 Support & Resources
 
-- **Documentation**: [https://docs.multi-agent-orchestrator.com](https://docs.multi-agent-orchestrator.com)
-- **GitHub**: [https://github.com/multi-agent-orchestrator/api](https://github.com/multi-agent-orchestrator/api)
-- **Support**: [support@multi-agent-orchestrator.com](mailto:support@multi-agent-orchestrator.com)
-- **Status Page**: [https://status.multi-agent-orchestrator.com](https://status.multi-agent-orchestrator.com)
+- **Documentation**: [https://docs.coordinaitor.com](https://docs.coordinaitor.com)
+- **GitHub**: [https://github.com/coordinaitor/api](https://github.com/coordinaitor/api)
+- **Support**: [support@coordinaitor.com](mailto:support@coordinaitor.com)
+- **Status Page**: [https://status.coordinaitor.com](https://status.coordinaitor.com)
 
 ## 🏗️ SDKs & Libraries
 
 Official SDKs available for:
-- **JavaScript/TypeScript**: `npm install multi-agent-orchestrator-sdk`
-- **Python**: `pip install multi-agent-orchestrator`
-- **Go**: `go get github.com/multi-agent-orchestrator/go-sdk`
+- **JavaScript/TypeScript**: `npm install coordinaitor-sdk`
+- **Python**: `pip install coordinaitor`
+- **Go**: `go get github.com/coordinaitor/go-sdk`
 - **Java**: Maven/Gradle packages available
 
 ## 🧪 Testing

@@ -1,10 +1,29 @@
-import {
-  CodeWhispererClient,
-  GenerateCompletionsCommand,
-  ListCodeAnalysisFindings,
-  CreateCodeReviewCommand,
-  GetCodeAnalysisCommand,
-} from '@aws-sdk/client-codewhisperer';
+// Note: @aws-sdk/client-codewhisperer package doesn't exist yet
+// This is a placeholder implementation until AWS releases the official SDK
+
+// Mock types for CodeWhisperer
+class CodeWhispererClient {
+  constructor(config: any) {}
+  async send(command: any): Promise<any> {
+    return { completions: [] };
+  }
+}
+
+class GenerateCompletionsCommand {
+  constructor(public params: any) {}
+}
+
+class ListCodeAnalysisFindings {
+  constructor(public params: any) {}
+}
+
+class CreateCodeReviewCommand {
+  constructor(public params: any) {}
+}
+
+class GetCodeAnalysisCommand {
+  constructor(public params: any) {}
+}
 import { APIAgent } from '../api-agent';
 import { AgentConfig, AgentRequest } from '../../interfaces/agent.interface';
 

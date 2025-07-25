@@ -73,7 +73,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             {sidebarOpen ? <Close /> : <MenuIcon />}
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Multi-Agent Orchestrator
+            CoordinAItor
           </Typography>
           <Chip
             label={isConnected ? 'Connected' : 'Disconnected'}

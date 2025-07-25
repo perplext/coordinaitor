@@ -1,8 +1,8 @@
-# Multi-Agent Orchestrator Architecture
+# CoordinAItor Architecture
 
 ## Overview
 
-The Multi-Agent Orchestrator is a cloud-native system designed to coordinate multiple AI coding agents to work together on complex software development projects. It integrates 10+ different AI agents including Claude Code, Google Gemini, OpenAI Codex, AWS Kiro, Amazon Q Developer, and more.
+The CoordinAItor is a cloud-native system designed to coordinate multiple AI coding agents to work together on complex software development projects. It integrates 10+ different AI agents including Claude Code, Google Gemini, OpenAI Codex, AWS Kiro, Amazon Q Developer, and more.
 
 ## Core Components
 
@@ -104,7 +104,7 @@ score = baseScore
 
 ### Kubernetes Structure
 ```
-namespace: multi-agent-orchestrator
+namespace: coordinaitor
 ├── orchestrator (Deployment, 3 replicas)
 ├── claude-agent (Deployment, 2 replicas)
 ├── gemini-agent (Deployment, 2 replicas)

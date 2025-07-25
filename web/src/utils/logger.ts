@@ -272,6 +272,7 @@ const logger = new Logger({
 });
 
 export default logger;
+export { logger };
 
 // Convenience exports
 export const error = logger.error.bind(logger);

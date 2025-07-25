@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: orchestrator
+      POSTGRES_DB: coordinaitor
     ports:
       - "5432:5432"
     volumes:
@@ -36,7 +36,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: multi-agent-orchestrator
+    container_name: coordinaitor
     depends_on:
       postgres:
         condition: service_healthy
@@ -49,7 +49,7 @@ services:
       DB_PORT: 5432
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
-      DB_NAME: orchestrator
+      DB_NAME: coordinaitor
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-change_me_in_production}
     ports:

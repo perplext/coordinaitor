@@ -1,6 +1,6 @@
-# Multi-Agent Orchestrator API - curl Examples
+# CoordinAItor API - curl Examples
 
-This document provides comprehensive curl examples for testing the Multi-Agent Orchestrator API.
+This document provides comprehensive curl examples for testing the CoordinAItor API.
 
 ## Environment Setup
 

@@ -47,7 +47,7 @@ export function CollaborationIndicator({
       title={
         <Box>
           <Typography variant="body2" fontWeight="bold">
-            Multi-Agent Collaboration
+            CoordinAItor Collaboration
           </Typography>
           <Typography variant="caption" display="block">
             Strategy: {strategy}

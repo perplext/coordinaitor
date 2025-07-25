@@ -1,9 +1,9 @@
 {
-  "name": "multi-agent-orchestrator",
-  "displayName": "Multi-Agent Orchestrator",
-  "description": "VS Code extension for the Multi-Agent Orchestrator system",
+  "name": "coordinaitor",
+  "displayName": "CoordinAItor",
+  "description": "VS Code extension for the CoordinAItor system",
   "version": "0.1.0",
-  "publisher": "multi-agent-orchestrator",
+  "publisher": "coordinaitor",
   "engines": {
     "vscode": "^1.85.0"
   },

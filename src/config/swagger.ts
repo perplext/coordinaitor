@@ -4,7 +4,7 @@ import { SwaggerDefinition } from 'swagger-jsdoc';
 const swaggerDefinition: SwaggerDefinition = {
   openapi: '3.0.0',
   info: {
-    title: 'Multi-Agent Orchestrator API',
+    title: 'CoordinAItor API',
     version: '1.0.0',
     description: `
       A comprehensive API for managing AI agents, tasks, workflows, and enterprise features.
@@ -32,15 +32,15 @@ const swaggerDefinition: SwaggerDefinition = {
       All errors follow the standard HTTP status codes with detailed error messages in JSON format.
     `,
     contact: {
-      name: 'Multi-Agent Orchestrator Team',
-      email: 'support@multi-agent-orchestrator.com',
-      url: 'https://github.com/multi-agent-orchestrator/api'
+      name: 'CoordinAItor Team',
+      email: 'support@coordinaitor.com',
+      url: 'https://github.com/coordinaitor/api'
     },
     license: {
       name: 'MIT',
       url: 'https://opensource.org/licenses/MIT'
     },
-    termsOfService: 'https://multi-agent-orchestrator.com/terms'
+    termsOfService: 'https://coordinaitor.com/terms'
   },
   servers: [
     {
@@ -48,11 +48,11 @@ const swaggerDefinition: SwaggerDefinition = {
       description: 'Development server'
     },
     {
-      url: 'https://api.multi-agent-orchestrator.com',
+      url: 'https://api.coordinaitor.com',
       description: 'Production server'
     },
     {
-      url: 'https://staging-api.multi-agent-orchestrator.com',
+      url: 'https://staging-api.coordinaitor.com',
       description: 'Staging server'
     }
   ],

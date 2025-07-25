@@ -235,7 +235,7 @@ export const OnboardingFlow: React.FC = () => {
       >
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <Typography variant="h5">
-            Getting Started with Multi-Agent Orchestrator
+            Getting Started with CoordinAItor
           </Typography>
           <IconButton onClick={handleExit}>
             <Close />

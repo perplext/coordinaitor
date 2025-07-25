@@ -442,7 +442,7 @@ export class TenantIsolationMiddleware {
       error: 'Organization not available',
       message: messages[organization.status as keyof typeof messages] || 'Organization is not active',
       status: organization.status,
-      contactEmail: 'support@multi-agent-orchestrator.com'
+      contactEmail: 'support@coordinaitor.com'
     });
   }
 

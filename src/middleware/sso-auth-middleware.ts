@@ -431,7 +431,7 @@ export class SSOAuthMiddleware {
     const tokenOptions: jwt.SignOptions = {
       expiresIn: options?.expiresIn || this.config.jwtExpiry,
       audience: options?.audience,
-      issuer: options?.issuer || 'multi-agent-orchestrator'
+      issuer: options?.issuer || 'coordinaitor'
     };
 
     return jwt.sign(payload, this.config.jwtSecret, tokenOptions);

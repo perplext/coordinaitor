@@ -21,16 +21,18 @@ describe('End-to-End Multi-Tenant Workflow', () => {
     await db.initialize();
     
     // Setup test app (this would import the actual app)
-    // app = createTestApp();
+    const express = require('express');
+    app = express();
+    app.use(express.json());
   });
 
   afterAll(async () => {
     // Cleanup test data
     if (org1Id) {
-      await db.executeQuery('DELETE FROM organizations WHERE id = $1', [org1Id]);
+      await db.query('DELETE FROM organizations WHERE id = $1', [org1Id]);
     }
     if (org2Id) {
-      await db.executeQuery('DELETE FROM organizations WHERE id = $2', [org2Id]);
+      await db.query('DELETE FROM organizations WHERE id = $2', [org2Id]);
     }
     await db.close();
   });

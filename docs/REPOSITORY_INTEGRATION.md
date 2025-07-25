@@ -1,6 +1,6 @@
 # Repository Integration Guide
 
-This guide covers the comprehensive GitHub and GitLab integration system implemented in the Multi-Agent Orchestrator.
+This guide covers the comprehensive GitHub and GitLab integration system implemented in the CoordinAItor.
 
 ## Overview
 
