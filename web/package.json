@@ -48,7 +48,7 @@
     "puppeteer": "^24.14.0",
     "ts-jest": "^29.4.0",
     "typescript": "^5.3.2",
-    "vite": "^5.0.7"
+    "vite": "^7.1.5"
   },
   "scripts": {
     "dev": "vite",
